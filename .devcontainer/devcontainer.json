@@ -1,0 +1,12 @@
+{
+    "name": "C Development",
+    "build": {
+        "dockerfile": "Dockerfile"
+    },
+    "settings": {
+        "terminal.integrated.shell.linux": "/bin/zsh"
+    },
+    "extensions": [
+    ],
+    "postCreateCommand": "chsh -s $(which zsh)",
+}
