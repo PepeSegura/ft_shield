@@ -1,44 +1,48 @@
-NAME = MAKEFLAGS    = --no-print-directory
+MAKEFLAGS	= --no-print-directory --silent -j
 
-NAME = ft_shield
+NAME := ft_shield
 
-CFLAGS       = #-Wextra -Wall -Werror
-CFLAGS      += -I inc
+CXX := gcc
 
-CC = gcc
+CXXFLAGS := -Wall -Wextra -Werror
+DEBUG := -g3 -fsanitize=address
 
-DEBUG        = -g3 -fsanitize=address
+RM := rm -rf
 
-CPPFLAGS     = -MMD
+BUILD_DIR := .objs/
 
-HEADERS      = -I ./inc
+SRC_DIR := srcs/
+INC_DIR := inc/
 
-FILES       =											\
-				srcs/main.c								\
+SRCS := $(shell find $(SRC_DIR) -name '*.c')
 
-OBJS = $(patsubst srcs/%.c, objs/srcs/%.o, $(FILES))
-DEPS       = $(OBJS:.o=.d)
+OBJS := $(SRCS:$(SRC_DIR)%.c=$(BUILD_DIR)%.o)
+DEPS := $(OBJS:.o=.d)
+
+INC := $(shell find $(INC_DIR) -type d)
+
+INC_FLAGS := $(addprefix -I , $(INC))
+
+CPPFLAGS := $(INC_FLAGS) -MMD -MP $(CPPFLAGS_EXTRA)
 
 all: $(NAME)
 
 $(NAME): $(OBJS)
-	$(CC) $(DEBUG) $(OBJS) $(HEADERS) -o $(NAME) && printf "Linking: $(NAME)\n"
+	@$(CXX) $(OBJS) $(DEBUG) -o $@ && printf "Linking: $(NAME)\n"
 
-objs/srcs/%.o: ./srcs/%.c
+$(BUILD_DIR)%.o: $(SRC_DIR)%.c
 	@mkdir -p $(dir $@)
-	@$(CC) $(DEBUG) $(CPPFLAGS) $(CFLAGS) -o $@ -c $< $(HEADERS) && printf "Compiling: $(notdir $<)\n"
+	@$(CXX) $(CPPFLAGS) $(CXXFLAGS) $(DEBUG) -c $< -o $@ && printf "Compiling: $(notdir $<)\n"
 
 clean:
-	@rm -rf objs
+	@$(RM) $(BUILD_DIR)
 
 fclean: clean
-	@rm -rf $(NAME)
+	@$(RM) $(NAME)
 
-re: fclean all
-
--include $(DEPS)
+re:: fclean
+re:: $(NAME)
 
 .PHONY: all clean fclean re
 
-# how to copy from host to VM
-# rsync -avz -e "ssh -p 4040" --delete ~/ft_shield pepe@localhost:~/ft_shield
+-include $(DEPS)

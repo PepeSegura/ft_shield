@@ -1,13 +1,6 @@
 #include "ft_shield.h"
 
-#include <limits.h>
-#include <stdlib.h>
-#include <string.h>
-#include <unistd.h>
-#include <sys/types.h>
-#include <fcntl.h>
-#include <unistd.h>
-#include <libgen.h>
+
 
 void	ft_shield()
 {
@@ -16,24 +9,45 @@ void	ft_shield()
 	printf("UID: %d\n", uid);
 }
 
-int	find_own_path(char *buffer, size_t size_buffer)
-{
-	const char *paths[] = {
-		"/proc/self/exe",        // Linux
-		"/proc/curproc/file",    // FreeBSD
-        "/proc/self/path/a.out", // Solaris
-        "/proc/curproc/exe",     // NetBSD
-        NULL
-    };
 
-	for (int i = 0; paths[i]; ++i)
+void	create_server()
+{
+	int socketFd = socket(AF_INET, SOCK_STREAM, 0);
+	if (socketFd == -1)
 	{
-		size_t readed = readlink(paths[i], buffer, size_buffer);
-		if (readed != -1)
-			return (i);
+		perror("socket");
+		exit(EXIT_FAILURE);
 	}
-	return (-1);
+
+
+	int reuse = 1;
+	if (setsockopt(socketFd, SOL_SOCKET, SO_REUSEADDR, (const char *)&reuse, sizeof(reuse)) < 0)
+	{
+		perror("setsockopt(SO_REUSEADDR)");
+		exit(EXIT_FAILURE);
+	}
+
+
+	struct sockaddr_in server_addr;
+
+	memset(&server_addr, 0, sizeof(server_addr));
+	server_addr.sin_family = AF_INET;
+	server_addr.sin_port = htons(8080);
+	server_addr.sin_addr.s_addr = htonl(INADDR_ANY);
+
+	if (bind(socketFd, (struct sockaddr *)&server_addr, sizeof(server_addr)) == -1)
+	{
+		perror("bind");
+		exit(EXIT_FAILURE);
+	}
+
+	if (listen(socketFd, 16) == -1)
+	{
+		perror("Listening failed");
+		exit(EXIT_FAILURE);
+	}
 }
+
 
 int main(int argc, char **argv)
 {
@@ -49,6 +63,7 @@ int main(int argc, char **argv)
 	else
 	{
 		printf("We are safe: %s\n", path);
+		// create_server();
 	}
 
 	return (0);
