@@ -28,7 +28,7 @@ CPPFLAGS := $(INC_FLAGS) -MMD -MP $(CPPFLAGS_EXTRA)
 all: $(NAME)
 
 $(NAME): $(OBJS)
-	@$(CXX) $(OBJS) $(DEBUG) -o $@ && printf "Linking: $(NAME)\n"
+	@$(CXX) $(CXXFLAGS) $(OBJS) $(DEBUG) -o $@ && printf "Linking: $(NAME)\n"
 
 $(BUILD_DIR)%.o: $(SRC_DIR)%.c
 	@mkdir -p $(dir $@)

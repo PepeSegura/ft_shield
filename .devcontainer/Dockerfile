@@ -1,7 +1,7 @@
 FROM debian:latest
 
 RUN apt-get update && \
-    apt-get install -y zsh build-essential curl git btop && \
+    apt-get install -y zsh build-essential curl git btop netcat-openbsd net-tools && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 
