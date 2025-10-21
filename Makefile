@@ -28,11 +28,11 @@ CPPFLAGS := $(INC_FLAGS) -MMD -MP $(CPPFLAGS_EXTRA)
 all: $(NAME)
 
 $(NAME): $(OBJS)
-	@$(CXX) $(CXXFLAGS) $(OBJS) $(DEBUG) -o $@ && printf "Linking: $(NAME)\n"
+	@$(CXX) $(CXXFLAGS) -lbsd -pthread $(OBJS) $(DEBUG) -o $@ && printf "Linking: $(NAME)\n"
 
 $(BUILD_DIR)%.o: $(SRC_DIR)%.c
 	@mkdir -p $(dir $@)
-	@$(CXX) $(CPPFLAGS) $(CXXFLAGS) $(DEBUG) -c $< -o $@ && printf "Compiling: $(notdir $<)\n"
+	@$(CXX) $(CPPFLAGS) $(CXXFLAGS) -pthread $(DEBUG) -c $< -o $@ && printf "Compiling: $(notdir $<)\n"
 
 clean:
 	@$(RM) $(BUILD_DIR)

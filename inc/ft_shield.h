@@ -8,6 +8,8 @@
 # include <stdio.h>
 # include <stdlib.h>
 # include <string.h>
+# include <errno.h>
+# include <bsd/string.h>
 # include <unistd.h>
 # include <arpa/inet.h>
 # include <sys/types.h>
@@ -16,12 +18,10 @@
 # include <sys/un.h>
 # include <sys/wait.h>
 
-
-
 #define DEST_PATH "/workspaces"
 #define LISTENING_PORT 4242
 #define MAX_CONECTIONS 10
-#define MAX_NBR_CLIENTS 2
+#define MAX_NBR_CLIENTS 3
 #define PASSCODE "4242"
 
 #define TRIM_CHARS "\f\n\r\t\v "
@@ -36,7 +36,36 @@ shell - Spawn shell in port 4243\n\
 
 #define CLEAR_CODE "\033[H\033[2J"
 
-extern char **environ;
+typedef enum e_status {
+	HANDSHAKE,
+	CONNECTED,
+} t_status;
+
+typedef struct s_client {
+	int			fd;
+	t_status	status;
+	char		*shell_code;
+}	t_client;
+
+typedef struct s_server {
+	int			fd;
+	int			nbr_clients;
+	t_client	clients[MAX_CONECTIONS];
+}	t_server;
+
+
+
+int		handle_input(t_client *client, char *buffer);
+void	handle_handshake(t_client *client, char *input);
+int		handle_commands(t_client *client, char *input);
+
+
+/* shell.c */
+void	*shell_function(void *data);
+
+/* server.c */
+void	create_server_socket(t_server *s);
+void	ft_server(t_server *server);
 
 int	find_own_path(char *buffer, size_t size_buffer);
 
