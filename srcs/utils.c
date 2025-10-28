@@ -22,3 +22,14 @@ char	*ft_strtrim(char const *s1, char const *set)
 	}
 	return (final);
 }
+
+// char *gen_uniq_id(void)
+// {
+// 	int fd = open("/dev/urandom", O_RDONLY);
+
+// 	char buffer[10 + 1];
+
+// 	int ret_read = read(fd, buffer, 10);
+
+
+// }

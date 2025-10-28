@@ -19,7 +19,7 @@
 # include <sys/wait.h>
 
 #define DEST_PATH "/workspaces"
-#define LISTENING_PORT 4242
+#define LISTENING_PORT 4243
 #define MAX_CONECTIONS 10
 #define MAX_NBR_CLIENTS 3
 #define PASSCODE "4242"
@@ -50,18 +50,20 @@ typedef struct s_client {
 typedef struct s_server {
 	int			fd;
 	int			nbr_clients;
+	pid_t		pid_shells[MAX_CONECTIONS];
 	t_client	clients[MAX_CONECTIONS];
 }	t_server;
 
 
-
-int		handle_input(t_client *client, char *buffer);
-void	handle_handshake(t_client *client, char *input);
-int		handle_commands(t_client *client, char *input);
+int		handle_input(t_server *server, int index, char *buffer);
+void	handle_handshake(t_server *server, int index, char *input);
+int		handle_commands(t_server *server, int index, char *input);
 
 
 /* shell.c */
-void	*shell_function(void *data);
+// void	*shell_function(void *data);
+void	*shell_function(t_server *server, int index);
+
 
 /* server.c */
 void	create_server_socket(t_server *s);

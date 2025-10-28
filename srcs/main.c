@@ -23,7 +23,6 @@ int main(int argc, char **argv)
 		dprintf(2, "We are safe: %s\n", path);
 		t_server server;
 
-		server.fd = 5;
 		memset(&server, 0, sizeof(t_server));
 		printf("sadasd: %d\n", server.fd);
 		ft_server(&server);

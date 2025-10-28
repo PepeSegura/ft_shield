@@ -46,9 +46,8 @@ void server_loop(t_server *s)
 
 	t_client			*clients = s->clients;
 
-	int	clients_nbr = 0;
 	int	max_fd = s->fd;
-
+	
 	fd_set		rfds;
 	while (1)
 	{
@@ -83,7 +82,7 @@ void server_loop(t_server *s)
 					perror("accept");
 					continue;
 				}
-				if (clients_nbr == MAX_NBR_CLIENTS)
+				if (s->nbr_clients == MAX_NBR_CLIENTS)
 				{
 					dprintf(2, "Connection denied, to many clients\n");
 					close(client_fd);
@@ -95,7 +94,7 @@ void server_loop(t_server *s)
 				int client_port = ntohs(address.sin_port);
 
 				dprintf(2, "Accepted connection from %s:%d\n", client_ip, client_port);
-				clients_nbr++;
+				s->nbr_clients++;
 				clients[client_fd].fd = client_fd;
 				dprintf(2, "New client accepted %d\n", client_fd);
 				if (clients[client_fd].status == HANDSHAKE)
@@ -105,6 +104,16 @@ void server_loop(t_server *s)
 			for (int fd = 0; fd <= max_fd; ++fd)
 			{
 				int c_fd = clients[fd].fd;
+				if (c_fd)
+				{
+					int status;
+    				int result = waitpid(s->pid_shells[c_fd], &status, WNOHANG);
+					if (result == s->pid_shells[c_fd])
+					{
+						dprintf(2, "process has finished\n");
+						s->nbr_clients--;
+					}
+				}
 				if (c_fd && FD_ISSET(c_fd, &rfds))
 				{
 
@@ -121,11 +130,16 @@ void server_loop(t_server *s)
 						dprintf(2, "Connection closed %d\n", c_fd);
 						close(c_fd);
 						memset(&clients[fd], 0, sizeof(t_client));
-						clients_nbr--;
+						s->nbr_clients--;
+						continue;
 					}
 					else
 					{
-						handle_input(&clients[fd], buffer);
+						handle_input(s, fd, buffer);
+					}
+					if (clients[fd].fd == 0) {
+						// Client was removed (e.g., by shell command)
+						continue;
 					}
 					if (clients[fd].status == HANDSHAKE)
 						send(c_fd, "Keycode: ", 10, 0);
