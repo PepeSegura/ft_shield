@@ -19,9 +19,9 @@
 # include <sys/wait.h>
 
 #define DEST_PATH "/workspaces"
-#define LISTENING_PORT 4243
+#define LISTENING_PORT 4242
 #define MAX_CONECTIONS 10
-#define MAX_NBR_CLIENTS 3
+#define MAX_NBR_CLIENTS 2
 #define PASSCODE "4242"
 
 #define TRIM_CHARS "\f\n\r\t\v "
@@ -37,6 +37,7 @@ shell - Spawn shell in port 4243\n\
 #define CLEAR_CODE "\033[H\033[2J"
 
 typedef enum e_status {
+	// DISCONENCTED,
 	HANDSHAKE,
 	CONNECTED,
 } t_status;
@@ -71,7 +72,17 @@ void	ft_server(t_server *server);
 
 int	find_own_path(char *buffer, size_t size_buffer);
 
-/* utils.c */
+/* utils/utils.c */
 char	*ft_strtrim(char const *s1, char const *set);
+
+/* utils/list.c */
+typedef struct s_list
+{
+	void			*content;
+	struct s_list	*next;
+}	t_list;
+
+t_list	*ft_lstnew(void *content);
+
 
 #endif

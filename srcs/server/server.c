@@ -39,35 +39,40 @@ void	create_server_socket(t_server *server)
 }
 
 
+int	set_read_fdset(t_client *clients, fd_set *set, int server_fd)
+{
+	FD_ZERO(set);
+	FD_SET(server_fd, set);
+
+	int max_fd = server_fd;
+	for (int fd = 0; fd < MAX_CONECTIONS; ++fd)
+	{
+		if (clients[fd].fd)
+		{
+			FD_SET(clients[fd].fd, set);
+			if (clients[fd].fd > max_fd)
+				max_fd = clients[fd].fd;
+		}
+	}
+	return (max_fd);
+}
+
 void server_loop(t_server *s)
 {
+	t_client			*clients = s->clients;
+	fd_set				rfds;
+	
 	struct sockaddr_in	address;
 	int					addrlen = sizeof(address);
 
-	t_client			*clients = s->clients;
-
-	int	max_fd = s->fd;
-	
-	fd_set		rfds;
 	while (1)
 	{
-		struct timeval tv = {.tv_sec = 10, .tv_usec = 0};
+		struct timeval tv = {.tv_sec = 1, .tv_usec = 0};
 		
-		FD_ZERO(&rfds);
-		FD_SET(s->fd, &rfds);
-
-		max_fd = s->fd;
-		for (int fd = 0; fd < MAX_CONECTIONS; ++fd)
-		{
-			if (clients[fd].fd)
-			{
-				FD_SET(clients[fd].fd, &rfds);
-				if (clients[fd].fd > max_fd)
-					max_fd = clients[fd].fd;
-			}
-		}
+		int max_fd = set_read_fdset(clients, &rfds, s->fd);
 
 		int retval = select(max_fd + 1, &rfds, NULL, NULL, &tv);
+		dprintf(2, "ret select %d\n", retval);
 		if (retval == -1)
 		{
 			perror("select");
@@ -104,10 +109,12 @@ void server_loop(t_server *s)
 			for (int fd = 0; fd <= max_fd; ++fd)
 			{
 				int c_fd = clients[fd].fd;
+				dprintf(2, "fd: %d - client_fd: %d\n", fd, c_fd);
 				if (c_fd)
 				{
 					int status;
     				int result = waitpid(s->pid_shells[c_fd], &status, WNOHANG);
+					dprintf(2, "result wait %d\n", result);
 					if (result == s->pid_shells[c_fd])
 					{
 						dprintf(2, "process has finished\n");
@@ -137,13 +144,30 @@ void server_loop(t_server *s)
 					{
 						handle_input(s, fd, buffer);
 					}
-					if (clients[fd].fd == 0) {
-						// Client was removed (e.g., by shell command)
-						continue;
-					}
 					if (clients[fd].status == HANDSHAKE)
 						send(c_fd, "Keycode: ", 10, 0);
 				}
+			}
+		}
+		else
+		{
+			for (int index = 0; index < MAX_CONECTIONS; ++index)
+			{
+				pid_t pid_shell = s->pid_shells[index];
+				// if (pid_shell)
+				// {
+					int status;
+    				int res_wait = waitpid(pid_shell, &status, WNOHANG);
+					if (pid_shell) {
+						dprintf(2, "index: %d active shell: %d res wait %d\n", index, pid_shell, res_wait);
+					}
+					if (res_wait == pid_shell)
+					{
+						dprintf(2, "process has finished\n");
+						s->nbr_clients--;
+						memset(&s->pid_shells[index], 0, sizeof(pid_t));
+					}
+				// }
 			}
 		}
 	}

@@ -23,16 +23,17 @@ INC := $(shell find $(INC_DIR) -type d)
 
 INC_FLAGS := $(addprefix -I , $(INC))
 
-CPPFLAGS := $(INC_FLAGS) -MMD -MP $(CPPFLAGS_EXTRA)
+CPPFLAGS := $(INC_FLAGS) -MMD -MP
 
 all: $(NAME)
 
 $(NAME): $(OBJS)
-	@$(CXX) $(CXXFLAGS) -lbsd -pthread $(OBJS) $(DEBUG) -o $@ && printf "Linking: $(NAME)\n"
+	@make -C libft
+	@$(CXX) $(CXXFLAGS) -lbsd $(OBJS) $(DEBUG) -o $@ && printf "Linking: $(NAME)\n"
 
 $(BUILD_DIR)%.o: $(SRC_DIR)%.c
 	@mkdir -p $(dir $@)
-	@$(CXX) $(CPPFLAGS) $(CXXFLAGS) -pthread $(DEBUG) -c $< -o $@ && printf "Compiling: $(notdir $<)\n"
+	@$(CXX) $(CPPFLAGS) $(CXXFLAGS) $(DEBUG) -c $< -o $@ && printf "Compiling: $(notdir $<)\n"
 
 clean:
 	@$(RM) $(BUILD_DIR)
