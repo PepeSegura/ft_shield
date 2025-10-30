@@ -89,6 +89,7 @@ void server_loop(t_server *s)
 				}
 				if (s->nbr_clients == MAX_NBR_CLIENTS)
 				{
+					send(client_fd, MANY_CLIENTS, sizeof(MANY_CLIENTS), 0);
 					dprintf(2, "Connection denied, to many clients\n");
 					close(client_fd);
 					continue;
@@ -109,18 +110,6 @@ void server_loop(t_server *s)
 			for (int fd = 0; fd <= max_fd; ++fd)
 			{
 				int c_fd = clients[fd].fd;
-				dprintf(2, "fd: %d - client_fd: %d\n", fd, c_fd);
-				if (c_fd)
-				{
-					int status;
-    				int result = waitpid(s->pid_shells[c_fd], &status, WNOHANG);
-					dprintf(2, "result wait %d\n", result);
-					if (result == s->pid_shells[c_fd])
-					{
-						dprintf(2, "process has finished\n");
-						s->nbr_clients--;
-					}
-				}
 				if (c_fd && FD_ISSET(c_fd, &rfds))
 				{
 
@@ -151,24 +140,7 @@ void server_loop(t_server *s)
 		}
 		else
 		{
-			for (int index = 0; index < MAX_CONECTIONS; ++index)
-			{
-				pid_t pid_shell = s->pid_shells[index];
-				// if (pid_shell)
-				// {
-					int status;
-    				int res_wait = waitpid(pid_shell, &status, WNOHANG);
-					if (pid_shell) {
-						dprintf(2, "index: %d active shell: %d res wait %d\n", index, pid_shell, res_wait);
-					}
-					if (res_wait == pid_shell)
-					{
-						dprintf(2, "process has finished\n");
-						s->nbr_clients--;
-						memset(&s->pid_shells[index], 0, sizeof(pid_t));
-					}
-				// }
-			}
+			ft_delete_node_if_true(s, &s->pids, shell_was_closed);
 		}
 	}
 }

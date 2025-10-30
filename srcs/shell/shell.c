@@ -28,7 +28,7 @@ void	*shell_function(t_server *server, int index)
 		exit(1);
 	}
 	else if (pid > 0) {
-		server->pid_shells[index] = pid;
+		ft_lstadd_back(&server->pids, ft_lstnew((void *)(long)pid));
 		close(client_fd);
 	}
 	return (NULL);

@@ -14,7 +14,7 @@ void handle_handshake(t_server *server, int index, char *input)
 		dprintf(2, "Valid KEY\n");
 		client->status = CONNECTED;
 	}
-	// send(client->fd, "$> ", 3, 0);
+	send(client->fd, "$> ", 3, 0);
 }
 
 int	handle_commands(t_server *server, int index, char *input)
@@ -35,10 +35,7 @@ int	handle_commands(t_server *server, int index, char *input)
 	{
 		send(client->fd, HELP, sizeof(HELP), 0);
 	}
-	else
-	{
-		// send(client->fd, "$> ", 3, 0);
-	}
+	send(client->fd, "$> ", 3, 0);
 	return (0);
 }
 

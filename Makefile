@@ -28,7 +28,6 @@ CPPFLAGS := $(INC_FLAGS) -MMD -MP
 all: $(NAME)
 
 $(NAME): $(OBJS)
-	@make -C libft
 	@$(CXX) $(CXXFLAGS) -lbsd $(OBJS) $(DEBUG) -o $@ && printf "Linking: $(NAME)\n"
 
 $(BUILD_DIR)%.o: $(SRC_DIR)%.c

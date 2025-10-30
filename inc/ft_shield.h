@@ -33,11 +33,12 @@ shell - Spawn shell in port 4243\n\
 ---------------------------------\n\
 "
 #define REMOTE_OPENED "New remote shell opened in port 4243\n"
-
+#define MANY_CLIENTS "Connection denied, to many clients\n"
 #define CLEAR_CODE "\033[H\033[2J"
 
+typedef struct s_list t_list;
+
 typedef enum e_status {
-	// DISCONENCTED,
 	HANDSHAKE,
 	CONNECTED,
 } t_status;
@@ -51,7 +52,7 @@ typedef struct s_client {
 typedef struct s_server {
 	int			fd;
 	int			nbr_clients;
-	pid_t		pid_shells[MAX_CONECTIONS];
+	t_list		*pids;
 	t_client	clients[MAX_CONECTIONS];
 }	t_server;
 
@@ -83,6 +84,11 @@ typedef struct s_list
 }	t_list;
 
 t_list	*ft_lstnew(void *content);
-
+t_list	*ft_lstlast(t_list *lst);
+void	ft_lstadd_back(t_list **lst, t_list *new_node);
+bool	shell_was_closed(t_list *node);
+void	ft_delete_node_if_true(t_server *server, t_list **lst, bool (*f)(t_list *));
+void	ft_lstdelone(t_list *lst, void (*del)(void *));
+void	ft_lstclear(t_list **lst, void (*del)(void *));
 
 #endif
