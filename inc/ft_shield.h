@@ -41,6 +41,7 @@ typedef struct s_list t_list;
 typedef enum e_status {
 	HANDSHAKE,
 	CONNECTED,
+	SHELL
 } t_status;
 
 typedef struct s_client {
@@ -53,6 +54,7 @@ typedef struct s_server {
 	int			fd;
 	int			nbr_clients;
 	t_list		*pids;
+	t_list		*passwords;
 	t_client	clients[MAX_CONECTIONS];
 }	t_server;
 
@@ -75,6 +77,8 @@ int	find_own_path(char *buffer, size_t size_buffer);
 
 /* utils/utils.c */
 char	*ft_strtrim(char const *s1, char const *set);
+char	*gen_random_password(void);
+
 
 /* utils/list.c */
 typedef struct s_list

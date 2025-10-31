@@ -140,6 +140,14 @@ void server_loop(t_server *s)
 		}
 		else
 		{
+			t_list *aux = s->passwords;
+			int i = 0;
+			while (aux)
+			{
+				printf("password %d - %s\n", i, (char *)aux->content);
+				i++;
+				aux = aux->next;
+			}
 			ft_delete_node_if_true(s, &s->pids, shell_was_closed);
 		}
 	}
