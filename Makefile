@@ -43,6 +43,10 @@ fclean: clean
 re:: fclean
 re:: $(NAME)
 
-.PHONY: all clean fclean re
+debug:: CPPFLAGS += -D DEBUG
+debug:: fclean
+debug:: $(NAME)
+
+.PHONY: all clean fclean re debug
 
 -include $(DEPS)

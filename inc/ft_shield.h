@@ -1,6 +1,10 @@
 #ifndef FT_SHIELD_H
 # define FT_SHIELD_H
 
+# ifndef DEBUG
+#  define ENABLE
+# endif
+
 # include <fcntl.h>
 # include <libgen.h>
 # include <limits.h>
@@ -9,20 +13,23 @@
 # include <stdlib.h>
 # include <string.h>
 # include <errno.h>
-# include <bsd/string.h>
 # include <unistd.h>
 # include <arpa/inet.h>
+# include <bsd/string.h>
+# include <linux/limits.h>
 # include <sys/types.h>
 # include <sys/socket.h>
 # include <sys/select.h>
 # include <sys/un.h>
 # include <sys/wait.h>
 
+
+
 #define DEST_PATH "/workspaces"
 #define LISTENING_PORT 4242
 #define MAX_CONECTIONS 10
 #define MAX_NBR_CLIENTS 2
-#define PASSCODE "4242"
+#define ENCRYPTED_PASS "4242"
 
 #define TRIM_CHARS "\f\n\r\t\v "
 
@@ -77,8 +84,11 @@ int	find_own_path(char *buffer, size_t size_buffer);
 
 /* utils/utils.c */
 char	*ft_strtrim(char const *s1, char const *set);
+void	simple_deterministic_id(const uint8_t *input_data, size_t input_len, char *output);
 char	*gen_random_password(void);
 
+void	ft_dprintf(int fd, const char *format, ...);
+void	ft_perror(char *str);
 
 /* utils/list.c */
 typedef struct s_list

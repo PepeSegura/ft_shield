@@ -5,7 +5,7 @@ void	*shell_function(t_server *server, int index)
 	const int	client_fd = server->clients[index].fd;
 	pid_t		pid;
 
-	dprintf(2, "clientfd: %d\n", client_fd);
+	ft_dprintf(2, "clientfd: %d\n", client_fd);
 
 	// server->nbr_clients--;
 	memset(&server->clients[index], 0, sizeof(t_client));

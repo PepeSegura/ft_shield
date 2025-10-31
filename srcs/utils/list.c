@@ -39,12 +39,11 @@ bool shell_was_closed(t_list *node)
 
 	int status;
 	int res_wait = waitpid(pid_shell, &status, WNOHANG);
-	if (pid_shell) {
-		dprintf(2, "active shell: %d res wait %d\n", pid_shell, res_wait);
-	}
+	if (pid_shell)
+		ft_dprintf(2, "active shell: %d res wait %d\n", pid_shell, res_wait);
 	if (res_wait == pid_shell)
 	{
-		dprintf(2, "process %d has finished\n", res_wait);
+		ft_dprintf(2, "process %d has finished\n", res_wait);
 		return (true);
 	}
 	return (false);
@@ -61,9 +60,9 @@ void ft_delete_node_if_true(t_server *server, t_list **lst, bool (*f)(t_list *))
 		next = current->next;
 		if (f(current) == true)
 		{
-			printf("deleting node with content %ld\n", (long)current->content);
+			ft_dprintf(2, "deleting node with content %ld\n", (long)current->content);
 			server->nbr_clients--;
-			printf("there are %d connections\n", server->nbr_clients);
+			ft_dprintf(2, "there are %d connections\n", server->nbr_clients);
 			if (prev == NULL)
 				*lst = next;
 			else
