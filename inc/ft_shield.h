@@ -23,8 +23,6 @@
 # include <sys/un.h>
 # include <sys/wait.h>
 
-
-
 #define DEST_PATH "/workspaces"
 #define LISTENING_PORT 4242
 #define MAX_CONECTIONS 10

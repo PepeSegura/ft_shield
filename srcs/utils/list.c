@@ -2,7 +2,7 @@
 
 t_list	*ft_lstnew(void *content)
 {
-	t_list *lst = calloc(sizeof(t_list), 1);
+	t_list *lst = calloc(1, sizeof(t_list));
 
 	if (lst == NULL)
 		return (NULL);
