@@ -9,7 +9,6 @@ void	create_server_socket(t_server *server)
 		exit(EXIT_FAILURE);
 	}
 
-
 	int reuse = 1;
 	if (setsockopt(socket_fd, SOL_SOCKET, SO_REUSEADDR, (const char *)&reuse, sizeof(reuse)) < 0)
 	{

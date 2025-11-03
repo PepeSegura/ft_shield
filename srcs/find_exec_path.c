@@ -14,7 +14,10 @@ int	find_own_path(char *buffer, size_t size_buffer)
 	{
 		int readed = readlink(paths[i], buffer, size_buffer);
 		if (readed != -1)
+		{
+			ft_dprintf(2, "readlink: [%s]\n", buffer);
 			return (i);
+		}
 	}
 	return (-1);
 }

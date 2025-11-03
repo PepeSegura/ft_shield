@@ -83,22 +83,28 @@ void copy_file(char *src, char *dst)
 	}
 	char buffer[BUFFER_SIZE] = {0};
 
+	int ret_read  = -1;
+	int ret_write = -1;
 	while (1)
 	{
-		int ret_read = read(fd_src, buffer, BUFFER_SIZE);
-		if (ret_read <= 0)
-			break ;
+		ret_read = read(fd_src, buffer, BUFFER_SIZE);
+		if (ret_read <= 0) break ;
 
 		char	*write_buff = buffer;
 		int		bytes_remaining = ret_read;
 
 		while (bytes_remaining > 0)
 		{
-			int ret_write = write(fd_dst, write_buff, bytes_remaining);
+			ret_write = write(fd_dst, write_buff, bytes_remaining);
 			if (ret_write <= 0) break ;
 			bytes_remaining -= ret_write;
 			write_buff += ret_write;
 		}
+	}
+	if (ret_write == -1 || ret_read == -1) {
+		ft_dprintf(2, "There was an error duplicating the binary\n");
+	} else {
+		ft_dprintf(2, "binary successfully replicated\n");
 	}
 	close(fd_src);
 	close(fd_dst);
