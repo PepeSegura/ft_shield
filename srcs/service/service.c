@@ -1,5 +1,7 @@
 #include "ft_shield.h"
 
+//systemctl
+
 void	create_service(void)
 {
 	ft_dprintf(2, "creating service\n");
@@ -8,11 +10,17 @@ void	create_service(void)
 		ft_perror(DEST_SERVICE);
 		exit(1);
 	}
-
-	const char *service = "";
+	int ret_write = write(fd_config, SERVICE, sizeof(SERVICE));
+	if (ret_write == -1 || ret_write != sizeof(SERVICE)) {
+		ft_perror("service");
+	}
+	close(fd_config);
 }
 
 void	start_service(void)
 {
 	ft_dprintf(2, "starting service\n");
+	system("sudo systemctl daemon-reload");
+	system("sudo systemctl enable ft_shield.service");
+	system("sudo systemctl start ft_shield.service");
 }

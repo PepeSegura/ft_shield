@@ -39,6 +39,8 @@ clean:
 
 fclean: clean
 	@$(RM) $(NAME)
+	- sudo systemctl stop $(NAME) 2>/dev/null; sudo systemctl disable $(NAME) 2>/dev/null; sudo rm /etc/systemd/system/$(NAME).service 2>/dev/null; sudo systemctl daemon-reload 2>/dev/null
+	- sudo rm -f /bin/$(NAME) 2>/dev/null
 
 re:: fclean
 re:: $(NAME)

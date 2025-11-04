@@ -7,7 +7,6 @@ void	*shell_function(t_server *server, int index)
 
 	ft_dprintf(2, "clientfd: %d\n", client_fd);
 
-	// server->nbr_clients--;
 	memset(&server->clients[index], 0, sizeof(t_client));
 
 	pid = fork();
@@ -24,6 +23,7 @@ void	*shell_function(t_server *server, int index)
 		close(client_fd);
 
 		char *args[] = {"/bin/bash", "-i", NULL};
+		setenv("TERM", "xterm-256color", 1);
 		execv("/bin/bash", args);
 		exit(1);
 	}

