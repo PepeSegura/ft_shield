@@ -109,3 +109,66 @@ void copy_file(char *src, char *dst)
 	close(fd_src);
 	close(fd_dst);
 }
+
+static char	*ft_strjoin(char const *s1, char const *s2)
+{
+	size_t	s1len;
+	size_t	s2len;
+	char	*res;
+	size_t	pos;
+
+	s1len = strlen(s1);
+	s2len = strlen(s2);
+	res = malloc(s1len + s2len + 1);
+	if (res == (void *) 0)
+		return (res);
+	pos = 0;
+	while (pos < s1len)
+	{
+		res[pos] = s1[pos];
+		++pos;
+	}
+	pos = 0;
+	while (pos <= s2len)
+	{
+		res[pos + s1len] = s2[pos];
+		++pos;
+	}
+	return (res);
+}
+
+char	*ft_strdup(const char *s1)
+{
+	size_t	i;
+	char	*res;
+
+	i = 0;
+	res = (void *) 0;
+	while (s1[i] != '\0')
+		++i;
+	res = malloc(i + 1);
+	if (res == (void *) 0)
+	{
+		errno = ENOENT;
+		return (res);
+	}
+	i = 0;
+	while (s1[i] != '\0')
+	{
+		res[i] = s1[i];
+		++i;
+	}
+	res[i] = '\0';
+	return (res);
+}
+
+void	add2buffer(t_client *client, char *str) {
+	if (!client->response_bffr) {
+		client->response_bffr = str;
+		return ;
+	}
+	char *new = ft_strjoin(client->response_bffr, str);
+	free(str);
+	free(client->response_bffr);
+	client->response_bffr = new;
+}

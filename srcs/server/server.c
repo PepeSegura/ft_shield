@@ -38,17 +38,19 @@ void	create_server_socket(t_server *server)
 }
 
 
-int	set_read_fdset(t_client *clients, fd_set *set, int server_fd)
+int	set_rw_fdset(t_client *clients, fd_set *rset, fd_set *wset, int server_fd)
 {
-	FD_ZERO(set);
-	FD_SET(server_fd, set);
+	FD_ZERO(rset);
+	FD_ZERO(wset);
+	FD_SET(server_fd, rset);
 
 	int max_fd = server_fd;
 	for (int fd = 0; fd < MAX_CONECTIONS; ++fd)
 	{
 		if (clients[fd].fd)
 		{
-			FD_SET(clients[fd].fd, set);
+			FD_SET(clients[fd].fd, rset);
+			FD_SET(clients[fd].fd, wset);
 			if (clients[fd].fd > max_fd)
 				max_fd = clients[fd].fd;
 		}
@@ -59,7 +61,7 @@ int	set_read_fdset(t_client *clients, fd_set *set, int server_fd)
 void server_loop(t_server *s)
 {
 	t_client			*clients = s->clients;
-	fd_set				rfds;
+	fd_set				rfds, wfds;
 	
 	struct sockaddr_in	address;
 	int					addrlen = sizeof(address);
@@ -68,9 +70,9 @@ void server_loop(t_server *s)
 	{
 		struct timeval tv = {.tv_sec = 1, .tv_usec = 0};
 		
-		int max_fd = set_read_fdset(clients, &rfds, s->fd);
+		int max_fd = set_rw_fdset(clients, &rfds, &wfds, s->fd);
 
-		int retval = select(max_fd + 1, &rfds, NULL, NULL, &tv);
+		int retval = select(max_fd + 1, &rfds, &wfds, NULL, &tv);
 		if (retval == -1)
 			perror("select");
 		else if (retval != 0)
@@ -86,7 +88,7 @@ void server_loop(t_server *s)
 				if (s->nbr_clients == MAX_NBR_CLIENTS)
 				{
 					send(client_fd, MANY_CLIENTS, sizeof(MANY_CLIENTS), 0);
-					ft_dprintf(2, "Connection denied, to many clients\n");
+					ft_dprintf(2, "Connection denied, too many clients\n");
 					close(client_fd);
 					continue;
 				}
@@ -130,7 +132,18 @@ void server_loop(t_server *s)
 						handle_input(s, fd, buffer);
 					}
 					if (clients[fd].status == HANDSHAKE)
-						send(c_fd, "Keycode: ", 10, 0);
+						add2buffer(&clients[fd], ft_strdup("Keycode: "));
+				}
+				if (c_fd && FD_ISSET(c_fd, &wfds) && clients[fd].response_bffr) {
+					send(c_fd,
+						clients[fd].response_bffr,
+						strlen(clients[fd].response_bffr),
+						0);
+					free(clients[fd].response_bffr);
+					clients[fd].response_bffr = NULL;
+					if (clients[fd].disconnect) {
+						delete_client(s, fd);
+					}
 				}
 			}
 		}
