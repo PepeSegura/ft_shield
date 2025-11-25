@@ -113,13 +113,13 @@ void server_loop(t_server *s)
 
 					char buffer[1024] = {0};
 
-					int ret_read = read(c_fd, buffer, sizeof(buffer) - 1);
-					if (ret_read < 0)
+					int rb = read(c_fd, buffer, sizeof(buffer) - 1);
+					if (rb < 0)
 					{
 						perror("recv");
 						continue;
 					}
-					else if (ret_read == 0)
+					else if (rb == 0)
 					{
 						ft_dprintf(2, "Connection closed %d\n", c_fd);
 						close(c_fd);
@@ -129,17 +129,34 @@ void server_loop(t_server *s)
 					}
 					else
 					{
+						s->total_inbytes += rb;
+						clients[fd].inbytes += rb;
 						handle_input(s, fd, buffer);
 					}
 					if (clients[fd].status == HANDSHAKE)
 						add2buffer(&clients[fd], ft_strdup("Keycode: "));
 				}
 				if (c_fd && FD_ISSET(c_fd, &wfds) && clients[fd].response_bffr) {
-					send(c_fd,
+					int sb = send(c_fd,
 						clients[fd].response_bffr,
 						strlen(clients[fd].response_bffr),
 						0);
+					if (sb < 0)
+					{
+						perror("recv");
+						continue;
+					}
+					else if (sb == 0)
+					{
+						ft_dprintf(2, "Connection closed %d\n", c_fd);
+						close(c_fd);
+						memset(&clients[fd], 0, sizeof(t_client));
+						s->nbr_clients--;
+						continue;
+					}
+					s->total_outbytes += sb;
 					free(clients[fd].response_bffr);
+					clients[fd].outbytes += sb;
 					clients[fd].response_bffr = NULL;
 					if (clients[fd].disconnect) {
 						delete_client(s, fd);

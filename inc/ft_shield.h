@@ -42,10 +42,11 @@
 
 #define HELP "\
 ---------------------------------\n\
-?     - Shows help\n\
-clear - Clear terminal\n\
-logon - Spawns a keylogger in port 4242\n\
-shell - Spawn shell in port 4242\n\
+?      - Shows help\n\
+clear  - Clear terminal\n\
+logon  - Spawns a keylogger in port 4242\n\
+shell  - Spawn shell in port 4242\n\
+nstats - Shows network stats\n\
 ---------------------------------\n\
 "
 #define REMOTE_OPENED "New remote shell opened in port 4242\n"
@@ -84,6 +85,8 @@ typedef struct s_client {
 	char		*shell_code;
 	char		*response_bffr;
 	char		disconnect;
+	size_t		inbytes; //client input bytes
+	size_t		outbytes; //client output bytes
 }	t_client;
 
 typedef struct s_server {
@@ -92,6 +95,8 @@ typedef struct s_server {
 	t_list		*pids;
 	t_list		*passwords;
 	t_client	clients[MAX_CONECTIONS];
+	size_t		total_outbytes;
+	size_t		total_inbytes;
 }	t_server;
 
 

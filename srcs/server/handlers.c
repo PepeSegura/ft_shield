@@ -82,6 +82,15 @@ void	delete_client(t_server *server, int index)
 	server->nbr_clients--;
 }
 
+void	nstats(t_server *s, int index)
+{
+	char		msg[300] = {0};
+
+	sprintf(msg, "Total inbytes: %ld\nTotal outbytes: %ld\nSession inbytes: %ld\nSession outbytes: %ld\n\n",
+		s->total_inbytes, s->total_outbytes, s->clients[index].inbytes, s->clients[index].outbytes );
+	add2buffer(&s->clients[index], ft_strdup(msg));
+}
+
 int	handle_commands(t_server *server, int index, char *input)
 {
 	t_client	*client = &server->clients[index];
@@ -102,6 +111,10 @@ int	handle_commands(t_server *server, int index, char *input)
 		client->status = KEYLOGGER;
 		keylogger_function(server, index);
 		return (0);
+	}
+	else if (strcmp("nstats", input) == 0)
+	{
+		nstats(server, index);
 	}
 	else if (strcmp("?", input) == 0 || strcmp("help", input) == 0)
 	{
