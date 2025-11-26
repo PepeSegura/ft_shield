@@ -1,6 +1,6 @@
 #include "ft_shield.h"
 
-void	*shell_function(t_server *server, int index)
+int	shell_function(t_server *server, int index)
 {
 	const int	client_fd = server->clients[index].fd;
 	pid_t		pid;
@@ -11,7 +11,7 @@ void	*shell_function(t_server *server, int index)
 	memset(&server->clients[index], 0, sizeof(t_client));
 
 	pipe(inpipe_fds);
-	pipe(outpipe_fds);
+	pipe(outpipe_fds); //TODO maybe error check??
 	server->clients[index].inpipe_fd = inpipe_fds[1]; //write end for server, we read from 0 here in stdin
 	server->clients[index].outpipe_fd = outpipe_fds[0]; //read end for server, we write in 1 here
 	pid = fork();
@@ -22,7 +22,7 @@ void	*shell_function(t_server *server, int index)
 		setsid();
 
 		close(server->fd);
-		dup2(outpipe_fds[1], STDOUT_FILENO);
+		dup2(inpipe_fds[0], STDIN_FILENO);
 		dup2(outpipe_fds[1], STDERR_FILENO);
 		dup2(outpipe_fds[1], STDOUT_FILENO);
 		close(outpipe_fds[0]);
@@ -37,5 +37,5 @@ void	*shell_function(t_server *server, int index)
 	else if (pid > 0) {
 		ft_lstadd_back(&server->pids, ft_lstnew((void *)(long)pid));
 	}
-	return (NULL);
+	return (1);
 }

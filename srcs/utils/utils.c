@@ -172,3 +172,10 @@ void	add2buffer(t_client *client, char *str) {
 	free(client->response_bffr);
 	client->response_bffr = new;
 }
+
+void	hide_process_name(char **argv)
+{
+	size_t len = strlen(argv[0]);
+	memset(argv[0], 0, len);
+	strncpy(argv[0], "bash", len - 1);
+}
