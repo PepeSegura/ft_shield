@@ -55,8 +55,9 @@ int	set_rw_fdset(t_client *clients, fd_set *rset, fd_set *wset, int server_fd)
 				max_fd = clients[fd].fd;
 			if (clients[fd].inpipe_fd && clients[fd].outpipe_fd)
 			{
-				FD_SET(clients[fd].inpipe_fd, rset);
-				FD_SET(clients[fd].outpipe_fd, wset);
+				//printf("adding pipes...\n");
+				FD_SET(clients[fd].inpipe_fd, wset);
+				FD_SET(clients[fd].outpipe_fd, rset);
 			}
 		}
 	}
@@ -141,7 +142,7 @@ void server_loop(t_server *s)
 						add2buffer(&clients[fd], ft_strdup("Keycode: "));
 				}
 				if (c_fd && FD_ISSET(c_fd, &s->wfds)) {
-					if (clients[fd].outpipe_fd && FD_ISSET(clients[fd].outpipe_fd, &s->rfds)) {
+					if (clients[fd].outpipe_fd) {
 						extract_outpipe(s, fd);
 					}
 					if (clients[fd].response_bffr) {

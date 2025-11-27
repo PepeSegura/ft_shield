@@ -37,6 +37,8 @@
 #define LISTENING_PORT 4242
 #define MAX_CONECTIONS 32 //because pipes may need more fds...
 #define MAX_NBR_CLIENTS 2
+#define READ_END 0
+#define WRITE_END 1
 
 #define TRIM_CHARS "\f\n\r\t\v "
 
