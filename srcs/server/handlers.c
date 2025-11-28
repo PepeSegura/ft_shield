@@ -59,7 +59,7 @@ void	handle_handshake(t_server *server, int index, char *input) {
 		}
 		ft_dprintf(2, "Valid KEY\n");
 		client->status = CONNECTED;
-	add2buffer(&server->clients[index], ft_strdup("$> "));
+		add2buffer(&server->clients[index], ft_strdup("$> "));
 	}
 }
 
@@ -128,7 +128,7 @@ int	handle_commands(t_server *server, int index, char *input)
 int	handle_inpipe(t_server *server, int index, char *input)
 {
 	const t_client	*client = &server->clients[index];
-	printf("trying to write inpipe, fdisset %i\n", FD_ISSET(client->inpipe_fd, &server->wfds));
+	//printf("trying to write inpipe, fdisset %i\n", FD_ISSET(client->inpipe_fd, &server->wfds));
 	if (client->inpipe_fd && FD_ISSET(client->inpipe_fd, &server->wfds))
 	{
 		write(client->inpipe_fd, input, strlen(input));
@@ -139,20 +139,25 @@ int	handle_inpipe(t_server *server, int index, char *input)
 
 int	extract_outpipe(t_server *server, int index)
 {
-	char buffer[4096] = {0};
+	char buffer[4096];
+
+	memset(buffer, 0, sizeof(buffer));
 	int			r = 0;
 	t_client	*client = &server->clients[index];
-	printf("trying to read outpipe, fdisset %i\n", FD_ISSET(client->outpipe_fd, &server->rfds));
+	//printf("trying to read outpipe %i, fdisset %i\n", client->outpipe_fd, FD_ISSET(client->outpipe_fd, &server->rfds));
 	if (client->outpipe_fd && FD_ISSET(client->outpipe_fd, &server->rfds))
 	{
 		r = read(client->outpipe_fd, buffer, 4095);
-		printf("reading outpipe!\n");
+		printf("reading outpipe! (bytes: %i)\n", r);
 	}
 	if (r > 0)
-		client->response_bffr = ft_strdup(buffer);
+	{
+		client->response_bffr = calloc(r + 1, 1);
+		memcpy(client->response_bffr, buffer, r);
+	}
 	else if (r < 0)
 		client->response_bffr = ft_strdup("errooooor\n");
-	return 0;
+	return r;
 }
 
 int	handle_input(t_server *server, int index, char *buffer)

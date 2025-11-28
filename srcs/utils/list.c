@@ -61,7 +61,7 @@ void ft_delete_node_if_true(t_server *server, t_list **lst, bool (*f)(t_list *))
 		if (f(current) == true)
 		{
 			ft_dprintf(2, "deleting node with content %ld\n", (long)current->content);
-			server->nbr_clients--;
+			//server->nbr_clients--;
 			ft_dprintf(2, "there are %d connections\n", server->nbr_clients);
 			if (prev == NULL)
 				*lst = next;

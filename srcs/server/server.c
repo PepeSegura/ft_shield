@@ -55,9 +55,13 @@ int	set_rw_fdset(t_client *clients, fd_set *rset, fd_set *wset, int server_fd)
 				max_fd = clients[fd].fd;
 			if (clients[fd].inpipe_fd && clients[fd].outpipe_fd)
 			{
-				//printf("adding pipes...\n");
+				//printf("adding pipes %i...\n", clients[fd].outpipe_fd);
 				FD_SET(clients[fd].inpipe_fd, wset);
 				FD_SET(clients[fd].outpipe_fd, rset);
+				if (clients[fd].inpipe_fd > max_fd)
+					max_fd = clients[fd].inpipe_fd;
+				if (clients[fd].outpipe_fd > max_fd)
+					max_fd = clients[fd].outpipe_fd;
 			}
 		}
 	}
@@ -126,8 +130,13 @@ void server_loop(t_server *s)
 					}
 					else if (rb == 0)
 					{
-						ft_dprintf(2, "Connection closed %d\n", c_fd);
+						ft_dprintf(2, "Connection closed %d (recv)\n", c_fd);
 						close(c_fd);
+						if (clients[fd].outpipe_fd)
+						{
+							close(clients[fd].outpipe_fd);
+							close(clients[fd].inpipe_fd);
+						}
 						memset(&clients[fd], 0, sizeof(t_client));
 						s->nbr_clients--;
 						continue;
@@ -142,14 +151,22 @@ void server_loop(t_server *s)
 						add2buffer(&clients[fd], ft_strdup("Keycode: "));
 				}
 				if (c_fd && FD_ISSET(c_fd, &s->wfds)) {
+					int rpipe = 0;
 					if (clients[fd].outpipe_fd) {
-						extract_outpipe(s, fd);
+						rpipe = extract_outpipe(s, fd);
 					}
 					if (clients[fd].response_bffr) {
-						int sb = send(c_fd,
-							clients[fd].response_bffr,
-							strlen(clients[fd].response_bffr),
-							0);
+						int sb;
+						if (rpipe > 0) {
+							sb = write(c_fd,
+								clients[fd].response_bffr,
+								rpipe);
+						} else {
+							sb = write(c_fd,
+								clients[fd].response_bffr,
+								strlen(clients[fd].response_bffr));
+						}
+						printf("Buffer: (%s)\n", clients[fd].response_bffr);
 						if (sb < 0)
 						{
 							perror("recv");
@@ -157,8 +174,14 @@ void server_loop(t_server *s)
 						}
 						else if (sb == 0)
 						{
-							ft_dprintf(2, "Connection closed %d\n", c_fd);
+							ft_dprintf(2, "Connection closed %d (write)\nBuffer: (%s)\n", c_fd, clients[fd].response_bffr);
 							close(c_fd);
+							if (clients[fd].outpipe_fd)
+							{
+								close(clients[fd].outpipe_fd);
+								close(clients[fd].inpipe_fd);
+							}
+							free(clients[fd].response_bffr);
 							memset(&clients[fd], 0, sizeof(t_client));
 							s->nbr_clients--;
 							continue;
