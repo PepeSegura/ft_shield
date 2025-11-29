@@ -76,10 +76,14 @@ void	add_password(t_server *server, int index)
 
 void	delete_client(t_server *server, int index)
 {
-	const int	client_fd = server->clients[index].fd;
+	t_client *client = &server->clients[index];
 
+	close(client->fd);
+	if (client->inpipe_fd && client->outpipe_fd) {
+		close(client->inpipe_fd);
+		close(client->outpipe_fd);
+	}
 	memset(&server->clients[index], 0, sizeof(t_client));
-	close(client_fd);
 	server->nbr_clients--;
 }
 
@@ -127,12 +131,20 @@ int	handle_commands(t_server *server, int index, char *input)
 
 int	handle_inpipe(t_server *server, int index, char *input)
 {
-	const t_client	*client = &server->clients[index];
+	t_client	*client = &server->clients[index];
 	//printf("trying to write inpipe, fdisset %i\n", FD_ISSET(client->inpipe_fd, &server->wfds));
 	if (client->inpipe_fd && FD_ISSET(client->inpipe_fd, &server->wfds))
 	{
-		write(client->inpipe_fd, input, strlen(input));
-		printf("writing inpipe!\n");
+		//printf("writing inpipe!\n");
+		int r = write(client->inpipe_fd, input, strlen(input));
+		if (r < 0) {
+			close(client->inpipe_fd);
+			client->inpipe_fd = 0;
+			close(client->outpipe_fd);
+			client->outpipe_fd = 0;
+			client->status = CONNECTED;
+			client->response_bffr = strdup("$> ");
+		}
 	}
 	return 0;
 }
@@ -148,15 +160,23 @@ int	extract_outpipe(t_server *server, int index)
 	if (client->outpipe_fd && FD_ISSET(client->outpipe_fd, &server->rfds))
 	{
 		r = read(client->outpipe_fd, buffer, 4095);
-		printf("reading outpipe! (bytes: %i)\n", r);
+		//printf("reading outpipe! (bytes: %i)\n", r);
+		if (r == 0) {
+			close(client->inpipe_fd);
+			client->inpipe_fd = 0;
+			close(client->outpipe_fd);
+			client->outpipe_fd = 0;
+			client->status = CONNECTED;
+			client->response_bffr = strdup("$> ");
+		}
+		if (r > 0)
+		{
+			client->response_bffr = calloc(r + 1, 1);
+			memcpy(client->response_bffr, buffer, r);
+		}
+		if (r < 0)
+			client->response_bffr = ft_strdup("errooooor\n");
 	}
-	if (r > 0)
-	{
-		client->response_bffr = calloc(r + 1, 1);
-		memcpy(client->response_bffr, buffer, r);
-	}
-	else if (r < 0)
-		client->response_bffr = ft_strdup("errooooor\n");
 	return r;
 }
 

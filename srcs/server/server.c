@@ -166,7 +166,7 @@ void server_loop(t_server *s)
 								clients[fd].response_bffr,
 								strlen(clients[fd].response_bffr));
 						}
-						printf("Buffer: (%s)\n", clients[fd].response_bffr);
+						//printf("Buffer: (%s)\n", clients[fd].response_bffr);
 						if (sb < 0)
 						{
 							perror("recv");
