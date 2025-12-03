@@ -17,6 +17,7 @@
 # include <arpa/inet.h>
 # include <bsd/string.h>
 # include <linux/limits.h>
+# include <sys/ptrace.h>
 # include <sys/types.h>
 # include <sys/socket.h>
 # include <sys/select.h>
