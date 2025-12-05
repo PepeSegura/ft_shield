@@ -1,5 +1,48 @@
 #include "ft_shield.h"
 
+char	*ft_strnstr(const char *haystack, const char *needle, size_t len)
+{
+	size_t	pos;
+	size_t	i;
+
+	if (!*needle)
+		return ((char *)haystack);
+	pos = 0;
+	while (haystack[pos] && pos < len)
+	{
+		if (haystack[pos] == needle[0])
+		{
+			i = 1;
+			while (needle[i] && haystack[pos + i] == needle[i]
+				&& (pos + i) < len)
+				++i;
+			if (needle[i] == '\0')
+				return ((char *)&haystack[pos]);
+		}
+		++pos;
+	}
+	return (NULL);
+}
+
+size_t	ft_strlcpy(char *dest, const char *src, size_t size)
+{
+	size_t	i;
+
+	if (size == 0)
+		return (strlen(src));
+	i = 0;
+	if (size != 0)
+	{
+		while (src[i] != '\0' && i < (size -1))
+		{
+			dest[i] = src[i];
+			i++;
+		}
+		dest[i] = '\0';
+	}
+	return (strlen(src));
+}
+
 char	*ft_strtrim(char const *s1, char const *set)
 {
 	char	*final;
@@ -18,7 +61,7 @@ char	*ft_strtrim(char const *s1, char const *set)
 		final = calloc((size - i + 1), sizeof(char));
 		if (final == NULL)
 			return (NULL);
-		strlcpy(final, &s1[i], size - i + 1);
+		ft_strlcpy(final, &s1[i], size - i + 1);
 	}
 	return (final);
 }
@@ -171,11 +214,4 @@ void	add2buffer(t_client *client, char *str) {
 	free(str);
 	free(client->response_bffr);
 	client->response_bffr = new;
-}
-
-void	hide_process_name(char **argv)
-{
-	size_t len = strlen(argv[0]);
-	memset(argv[0], 0, len);
-	strncpy(argv[0], "bash", len - 1);
 }
