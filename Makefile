@@ -5,7 +5,7 @@ NAME := ft_shield
 CXX := gcc
 
 CXXFLAGS := -Wall -Wextra -Werror
-DEBUG := -g3 -fsanitize=address
+DEBUG := -g3 #-fsanitize=address
 
 RM := rm -rf
 

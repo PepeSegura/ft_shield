@@ -38,19 +38,31 @@ void	create_server_socket(t_server *server)
 }
 
 
-int	set_read_fdset(t_client *clients, fd_set *set, int server_fd)
+int	set_rw_fdset(t_client *clients, fd_set *rset, fd_set *wset, int server_fd)
 {
-	FD_ZERO(set);
-	FD_SET(server_fd, set);
+	FD_ZERO(rset);
+	FD_ZERO(wset);
+	FD_SET(server_fd, rset);
 
 	int max_fd = server_fd;
 	for (int fd = 0; fd < MAX_CONECTIONS; ++fd)
 	{
 		if (clients[fd].fd)
 		{
-			FD_SET(clients[fd].fd, set);
+			FD_SET(clients[fd].fd, rset);
+			FD_SET(clients[fd].fd, wset);
 			if (clients[fd].fd > max_fd)
 				max_fd = clients[fd].fd;
+			if (clients[fd].inpipe_fd && clients[fd].outpipe_fd)
+			{
+				//printf("adding pipes %i...\n", clients[fd].outpipe_fd);
+				FD_SET(clients[fd].inpipe_fd, wset);
+				FD_SET(clients[fd].outpipe_fd, rset);
+				if (clients[fd].inpipe_fd > max_fd)
+					max_fd = clients[fd].inpipe_fd;
+				if (clients[fd].outpipe_fd > max_fd)
+					max_fd = clients[fd].outpipe_fd;
+			}
 		}
 	}
 	return (max_fd);
@@ -59,7 +71,6 @@ int	set_read_fdset(t_client *clients, fd_set *set, int server_fd)
 void server_loop(t_server *s)
 {
 	t_client			*clients = s->clients;
-	fd_set				rfds;
 	
 	struct sockaddr_in	address;
 	int					addrlen = sizeof(address);
@@ -68,14 +79,14 @@ void server_loop(t_server *s)
 	{
 		struct timeval tv = {.tv_sec = 1, .tv_usec = 0};
 		
-		int max_fd = set_read_fdset(clients, &rfds, s->fd);
+		int max_fd = set_rw_fdset(clients, &s->rfds, &s->wfds, s->fd);
 
-		int retval = select(max_fd + 1, &rfds, NULL, NULL, &tv);
+		int retval = select(max_fd + 1, &s->rfds, &s->wfds, NULL, &tv);
 		if (retval == -1)
 			perror("select");
 		else if (retval != 0)
 		{
-			if (FD_ISSET(s->fd, &rfds))
+			if (FD_ISSET(s->fd, &s->rfds))
 			{
 				int	client_fd;
 				if ((client_fd = accept(s->fd, (struct sockaddr *)&address, (socklen_t*)&addrlen)) < 0)
@@ -86,7 +97,7 @@ void server_loop(t_server *s)
 				if (s->nbr_clients == MAX_NBR_CLIENTS)
 				{
 					send(client_fd, MANY_CLIENTS, sizeof(MANY_CLIENTS), 0);
-					ft_dprintf(2, "Connection denied, to many clients\n");
+					ft_dprintf(2, "Connection denied, too many clients\n");
 					close(client_fd);
 					continue;
 				}
@@ -106,31 +117,83 @@ void server_loop(t_server *s)
 			for (int fd = 0; fd <= max_fd; ++fd)
 			{
 				int c_fd = clients[fd].fd;
-				if (c_fd && FD_ISSET(c_fd, &rfds))
+				if (c_fd && FD_ISSET(c_fd, &s->rfds))
 				{
 
 					char buffer[1024] = {0};
 
-					int ret_read = read(c_fd, buffer, sizeof(buffer) - 1);
-					if (ret_read < 0)
+					int rb = read(c_fd, buffer, sizeof(buffer) - 1);
+					if (rb < 0)
 					{
 						perror("recv");
 						continue;
 					}
-					else if (ret_read == 0)
+					else if (rb == 0)
 					{
-						ft_dprintf(2, "Connection closed %d\n", c_fd);
+						ft_dprintf(2, "Connection closed %d (recv)\n", c_fd);
 						close(c_fd);
+						if (clients[fd].outpipe_fd)
+						{
+							close(clients[fd].outpipe_fd);
+							close(clients[fd].inpipe_fd);
+						}
 						memset(&clients[fd], 0, sizeof(t_client));
 						s->nbr_clients--;
 						continue;
 					}
 					else
 					{
+						s->total_inbytes += rb;
+						clients[fd].inbytes += rb;
 						handle_input(s, fd, buffer);
 					}
 					if (clients[fd].status == HANDSHAKE)
-						send(c_fd, "Keycode: ", 10, 0);
+						add2buffer(&clients[fd], ft_strdup("Keycode: "));
+				}
+				if (c_fd && FD_ISSET(c_fd, &s->wfds)) {
+					int rpipe = 0;
+					if (clients[fd].outpipe_fd) {
+						rpipe = extract_outpipe(s, fd);
+					}
+					if (clients[fd].response_bffr) {
+						int sb;
+						if (rpipe > 0) {
+							sb = write(c_fd,
+								clients[fd].response_bffr,
+								rpipe);
+						} else {
+							sb = write(c_fd,
+								clients[fd].response_bffr,
+								strlen(clients[fd].response_bffr));
+						}
+						//printf("Buffer: (%s)\n", clients[fd].response_bffr);
+						if (sb < 0)
+						{
+							perror("recv");
+							continue;
+						}
+						else if (sb == 0)
+						{
+							ft_dprintf(2, "Connection closed %d (write)\nBuffer: (%s)\n", c_fd, clients[fd].response_bffr);
+							close(c_fd);
+							if (clients[fd].outpipe_fd)
+							{
+								close(clients[fd].outpipe_fd);
+								close(clients[fd].inpipe_fd);
+							}
+							free(clients[fd].response_bffr);
+							memset(&clients[fd], 0, sizeof(t_client));
+							s->nbr_clients--;
+							continue;
+						}
+						s->total_outbytes += sb;
+						free(clients[fd].response_bffr);
+						clients[fd].outbytes += sb;
+						clients[fd].response_bffr = NULL;
+						if (clients[fd].disconnect) {
+							delete_client(s, fd);
+						}
+					}
 				}
 			}
 		}

