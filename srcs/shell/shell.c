@@ -12,13 +12,13 @@ int	shell_function(t_server *server, int index)
 	ft_dprintf(2, "clientfd: %d\n", client_fd);
 
 	pipe(inpipe_fds);
-	pipe(outpipe_fds); //TODO maybe error check??
+	pipe(outpipe_fds);
 	server->clients[index].inpipe_fd = inpipe_fds[WRITE_END]; //write end for server, we read from 0 here in stdin
 	server->clients[index].outpipe_fd = outpipe_fds[READ_END]; //read end for server, we write in 1 here
 	
 	pid = fork();
 	if (pid < 0) {
-		perror("fork");
+		ft_perror("fork");
 
 	}
 	else if (pid == 0) {

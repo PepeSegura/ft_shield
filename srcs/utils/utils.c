@@ -180,31 +180,6 @@ static char	*ft_strjoin(char const *s1, char const *s2)
 	return (res);
 }
 
-char	*ft_strdup(const char *s1)
-{
-	size_t	i;
-	char	*res;
-
-	i = 0;
-	res = (void *) 0;
-	while (s1[i] != '\0')
-		++i;
-	res = malloc(i + 1);
-	if (res == (void *) 0)
-	{
-		errno = ENOENT;
-		return (res);
-	}
-	i = 0;
-	while (s1[i] != '\0')
-	{
-		res[i] = s1[i];
-		++i;
-	}
-	res[i] = '\0';
-	return (res);
-}
-
 void	add2buffer(t_client *client, char *str) {
 	if (!client->response_bffr) {
 		client->response_bffr = str;

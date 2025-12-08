@@ -55,7 +55,6 @@ int	set_rw_fdset(t_client *clients, fd_set *rset, fd_set *wset, int server_fd)
 				max_fd = clients[fd].fd;
 			if (clients[fd].inpipe_fd && clients[fd].outpipe_fd)
 			{
-				//printf("adding pipes %i...\n", clients[fd].outpipe_fd);
 				FD_SET(clients[fd].inpipe_fd, wset);
 				FD_SET(clients[fd].outpipe_fd, rset);
 				if (clients[fd].inpipe_fd > max_fd)
@@ -83,7 +82,7 @@ void server_loop(t_server *s)
 
 		int retval = select(max_fd + 1, &s->rfds, &s->wfds, NULL, &tv);
 		if (retval == -1)
-			perror("select");
+			ft_perror("select");
 		else if (retval != 0)
 		{
 			if (FD_ISSET(s->fd, &s->rfds))
@@ -91,7 +90,7 @@ void server_loop(t_server *s)
 				int	client_fd;
 				if ((client_fd = accept(s->fd, (struct sockaddr *)&address, (socklen_t*)&addrlen)) < 0)
 				{
-					perror("accept");
+					ft_perror("accept");
 					continue;
 				}
 				if (s->nbr_clients == MAX_NBR_CLIENTS)
@@ -101,7 +100,7 @@ void server_loop(t_server *s)
 					close(client_fd);
 					continue;
 				}
-				// 5. Extract IP and port from client_addr
+
 				char client_ip[200] = {0};
 				inet_ntop(AF_INET, &address.sin_addr, client_ip, INET_ADDRSTRLEN);
 				int client_port = ntohs(address.sin_port);
@@ -125,7 +124,7 @@ void server_loop(t_server *s)
 					int rb = read(c_fd, buffer, sizeof(buffer) - 1);
 					if (rb < 0)
 					{
-						perror("recv");
+						ft_perror("recv");
 						continue;
 					}
 					else if (rb == 0)
@@ -148,7 +147,7 @@ void server_loop(t_server *s)
 						handle_input(s, fd, buffer);
 					}
 					if (clients[fd].status == HANDSHAKE)
-						add2buffer(&clients[fd], ft_strdup("Keycode: "));
+						add2buffer(&clients[fd], strdup("Keycode: "));
 				}
 				if (c_fd && FD_ISSET(c_fd, &s->wfds)) {
 					int rpipe = 0;
@@ -166,10 +165,9 @@ void server_loop(t_server *s)
 								clients[fd].response_bffr,
 								strlen(clients[fd].response_bffr));
 						}
-						//printf("Buffer: (%s)\n", clients[fd].response_bffr);
 						if (sb < 0)
 						{
-							perror("recv");
+							ft_perror("recv");
 							continue;
 						}
 						else if (sb == 0)

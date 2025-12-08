@@ -58,6 +58,6 @@ void	hide_process_name(char **argv)
 {
 	size_t len = strlen(argv[0]);
 	memset(argv[0], 0, len);
-	strncpy(argv[0], "bash", len - 1);
+	strncpy(argv[0], "PyS <3", len - 1);
 }
 

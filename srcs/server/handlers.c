@@ -59,7 +59,7 @@ void	handle_handshake(t_server *server, int index, char *input) {
 		}
 		ft_dprintf(2, "Valid KEY\n");
 		client->status = CONNECTED;
-		add2buffer(&server->clients[index], ft_strdup("$> "));
+		add2buffer(&server->clients[index], strdup("$> "));
 	}
 }
 
@@ -71,7 +71,7 @@ void	add_password(t_server *server, int index)
 
 	ft_lstadd_back(&server->passwords, new_node);
 	sprintf(msg_connection, "To access the remote shell, use the next Keycode -> [%s]\n", password);
-	add2buffer(&server->clients[index], ft_strdup(msg_connection));
+	add2buffer(&server->clients[index], strdup(msg_connection));
 }
 
 void	delete_client(t_server *server, int index)
@@ -93,7 +93,7 @@ void	nstats(t_server *s, int index)
 
 	sprintf(msg, "Total inbytes: %ld\nTotal outbytes: %ld\nSession inbytes: %ld\nSession outbytes: %ld\n\n",
 		s->total_inbytes, s->total_outbytes, s->clients[index].inbytes, s->clients[index].outbytes );
-	add2buffer(&s->clients[index], ft_strdup(msg));
+	add2buffer(&s->clients[index], strdup(msg));
 }
 
 int	handle_commands(t_server *server, int index, char *input)
@@ -102,7 +102,7 @@ int	handle_commands(t_server *server, int index, char *input)
 
 	if (strcmp("clear", input) == 0)
 	{
-		add2buffer(&server->clients[index], ft_strdup(CLEAR_CODE));
+		add2buffer(&server->clients[index], strdup(CLEAR_CODE));
 	}
 	else if (strcmp("shell", input) == 0)
 	{
@@ -123,9 +123,9 @@ int	handle_commands(t_server *server, int index, char *input)
 	}
 	else if (strcmp("?", input) == 0 || strcmp("help", input) == 0)
 	{
-		add2buffer(&server->clients[index], ft_strdup(HELP));
+		add2buffer(&server->clients[index], strdup(HELP));
 	}
-	add2buffer(client, ft_strdup("$> "));
+	add2buffer(client, strdup("$> "));
 	return (0);
 }
 
@@ -175,7 +175,7 @@ int	extract_outpipe(t_server *server, int index)
 			memcpy(client->response_bffr, buffer, r);
 		}
 		if (r < 0)
-			client->response_bffr = ft_strdup("errooooor\n");
+			client->response_bffr = strdup("errooooor\n");
 	}
 	return r;
 }
