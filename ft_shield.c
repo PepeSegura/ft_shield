@@ -144,8 +144,6 @@ char	*ft_strtrim(char const *s1, char const *set);
 void	simple_deterministic_id(const uint8_t *input_data, size_t input_len, char *output);
 char	*gen_random_password(void);
 
-void	copy_file(char *src, char *dst);
-
 void	ft_dprintf(int fd, const char *format, ...);
 void	ft_perror(char *str);
 
@@ -1083,50 +1081,6 @@ char	*gen_random_password(void)
 	return (password);
 }
 
-#define BUFFER_SIZE 4096
-
-void copy_file(char *src, char *dst)
-{
-	int	fd_src = open(src, O_RDONLY);
-	if (fd_src == -1) {
-		ft_perror(src);
-		return ;
-	}
-	int	fd_dst = open(dst, O_WRONLY | O_CREAT | O_TRUNC, 0755);
-	if (fd_dst == -1) {
-		ft_perror(dst);
-		close(fd_src);
-		return ;
-	}
-	char buffer[BUFFER_SIZE] = {0};
-
-	int ret_read  = -1;
-	int ret_write = -1;
-	while (1)
-	{
-		ret_read = read(fd_src, buffer, BUFFER_SIZE);
-		if (ret_read <= 0) break ;
-
-		char	*write_buff = buffer;
-		int		bytes_remaining = ret_read;
-
-		while (bytes_remaining > 0)
-		{
-			ret_write = write(fd_dst, write_buff, bytes_remaining);
-			if (ret_write <= 0) break ;
-			bytes_remaining -= ret_write;
-			write_buff += ret_write;
-		}
-	}
-	if (ret_write == -1 || ret_read == -1) {
-		ft_dprintf(2, "There was an error duplicating the binary\n");
-	} else {
-		ft_dprintf(2, "binary successfully replicated\n");
-	}
-	close(fd_src);
-	close(fd_dst);
-}
-
 static char	*ft_strjoin(char const *s1, char const *s2)
 {
 	size_t	s1len;
@@ -1367,7 +1321,6 @@ void	install_server(int argc, char **argv)
 	printf("%s\n", "psegura- & sacorder");
 	daemon(1, 1);
 	quine();
-	// copy_file(path, DEST_PATH);
 	create_service();
 	start_service();
 }
