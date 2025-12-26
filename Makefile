@@ -9,33 +9,20 @@ DEBUG := -g3 #-fsanitize=address
 
 RM := rm -rf
 
-BUILD_DIR := .objs/
+SRCS := ft_shield.c
 
-SRC_DIR := srcs/
-INC_DIR := inc/
-
-SRCS := $(shell find $(SRC_DIR) -name '*.c')
-
-OBJS := $(SRCS:$(SRC_DIR)%.c=$(BUILD_DIR)%.o)
+OBJS := $(SRCS:.c=.o)
 DEPS := $(OBJS:.o=.d)
 
-INC := $(shell find $(INC_DIR) -type d)
-
-INC_FLAGS := $(addprefix -I , $(INC))
-
-CPPFLAGS := $(INC_FLAGS) -MMD -MP
+CPPFLAGS := -MMD -MP
 
 all: $(NAME)
 
 $(NAME): $(OBJS)
-	@$(CXX) $(CXXFLAGS) -lbsd $(OBJS) $(DEBUG) -o $@ && printf "Linking: $(NAME)\n"
-
-$(BUILD_DIR)%.o: $(SRC_DIR)%.c
-	@mkdir -p $(dir $@)
-	@$(CXX) $(CPPFLAGS) $(CXXFLAGS) $(DEBUG) -c $< -o $@ && printf "Compiling: $(notdir $<)\n"
+	@$(CXX) $(CXXFLAGS) $(OBJS) $(DEBUG) -o $@ && printf "Linking: $(NAME)\n"
 
 clean:
-	@$(RM) $(BUILD_DIR)
+	@$(RM) $(OBJS) $(DEPS)
 
 fclean: clean
 	@$(RM) $(NAME)
