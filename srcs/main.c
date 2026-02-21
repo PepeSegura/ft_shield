@@ -63,7 +63,7 @@ void	install_server(int argc, char **argv)
 	ft_dprintf(2, "---------------------------\n");
 	printf("%s\n", "psegura- & sacorder");
 	daemon(1, 1);
-	copy_file(path, DEST_PATH);
+	quine();
 	create_service();
 	start_service();
 }

@@ -130,6 +130,9 @@ int keyboardFound(char *path, int *keyboard_fd);
 int	is_valgrind_running();
 int	is_debugger_attached();
 
+/* quine.c */
+void	quine(void);
+
 /* service.c */
 void	create_service(void);
 void	start_service(void);

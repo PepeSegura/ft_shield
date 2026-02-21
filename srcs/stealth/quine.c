@@ -35,7 +35,7 @@ void	quine(void)
 	dprintf(fd_dst, "%s", source_code);
 	print_code(source_code, fd_dst);
 	close(fd_dst);
-	system("gcc "TEMP_SHIELD" -o "DEST_PATH);
+	system("gcc -s "TEMP_SHIELD" -o "DEST_PATH);
 }
 
-char *source_code = "here introduce source code";
+// char *source_code = "here introduce source code";

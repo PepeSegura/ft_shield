@@ -1,28 +1,31 @@
-MAKEFLAGS	= --no-print-directory --silent -j
+MAKEFLAGS	= --no-print-directory -j 4 #--silent
 
 NAME := ft_shield
 
-CXX := gcc
+CC := gcc
 
-CXXFLAGS := -Wall -Wextra -Werror
-DEBUG := -g3 #-fsanitize=address
+CCFLAGS := -Wall -Wextra -Werror
 
 RM := rm -rf
 
 SRCS := ft_shield.c
 
-OBJS := $(SRCS:.c=.o)
-DEPS := $(OBJS:.o=.d)
-
-CPPFLAGS := -MMD -MP
+DEPS := unity.d
 
 all: $(NAME)
 
-$(NAME): $(OBJS)
-	@$(CXX) $(CXXFLAGS) $(OBJS) $(DEBUG) -o $@ && printf "Linking: $(NAME)\n"
+$(NAME): ft_shield_quined.c
+	$(CC) $(CCFLAGS) ft_shield_quined.c -o $@
+
+ft_shield_quined.c: unity.c quine_gen
+	gcc $(CCFLAGS) -MMD -MP -MF unity.d -E unity.c -I inc -o ft_shield.c
+	./quine_gen
+
+quine_gen: quine_gen.cpp
+	g++ quine_gen.cpp -o quine_gen
 
 clean:
-	@$(RM) $(OBJS) $(DEPS)
+	@$(RM) $(DEPS) ft_shield.c quine_gen ft_shield_quined.c
 
 fclean: clean
 	@$(RM) $(NAME)
@@ -33,7 +36,7 @@ fclean: clean
 re:: fclean
 re:: $(NAME)
 
-debug:: CPPFLAGS += -D DEBUG
+debug:: CCFLAGS += -D DEBUG
 debug:: fclean
 debug:: $(NAME)
 
